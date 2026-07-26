@@ -1167,8 +1167,21 @@ export async function renderSession(root: HTMLElement) {
         }
         win.document.close();
     };
+    const showAutomationWorkbench = () => {
+        closeToolsMenu();
+        void window.api.automationOpen(activeProfileId ?? undefined).catch((err) => {
+            logErr(err, "automation-workbench");
+            showToast(err instanceof Error ? err.message : String(err), "error");
+        });
+    };
     type ToolSection = { header: string; entries: ToolEntry[] };
     const toolSections: ToolSection[] = [
+        {
+            header: "Supervised Automation",
+            entries: [
+                { label: "◉ Vision Automation Workbench", action: showAutomationWorkbench },
+            ],
+        },
         {
             header: "Interne Tools",
             entries: [

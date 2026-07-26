@@ -6,7 +6,7 @@ const eventHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock("electron", () => ({
     app: { getVersion: () => "3.3.0" },
-    BrowserWindow: { getAllWindows: () => [] },
+    BrowserWindow: { getAllWindows: (): unknown[] => [] },
     dialog: { showMessageBox: vi.fn(), showErrorBox: vi.fn() },
     ipcMain: {
         handle: (channel: string, handler: (...args: unknown[]) => unknown) => {
@@ -109,7 +109,7 @@ describe("autoUpdater – installVersion", () => {
         );
         expect(genericCall).toBeDefined();
         expect(genericCall![0].url).toBe(
-            "https://github.com/GH-Praxa/Flyff-U-Launcher/releases/download/v3.2.0/",
+            "https://github.com/JoshuaSayo/Flyff-U-Launcher/releases/download/v3.2.0/",
         );
     });
 

@@ -1,3 +1,7 @@
+## Gözetimli görsel otomasyon (fork özelliği)
+
+Bu topluluk forku, yalnızca görüntüye dayanan ve kullanıcı gözetimi gerektiren bir otomasyon çalışma alanı içerir. Varsayılan mod yalnızca gözlemcidir; savaş modu açık onay ister ve sadece seçili ön plan istemcisini kontrol eder. Oyun belleği, paketler, DOM, resmi API veya eklenti verileri kullanılmaz. Kullanım oyun kurallarını ihlal edebilir ve hesabı riske atabilir. Etkinleştirmeden önce tam [otomasyon kılavuzunu](../../AUTOMATION.md) okuyun.
+
 ## Temel Özellikler
 
 :::accordion[Profil oluştur]

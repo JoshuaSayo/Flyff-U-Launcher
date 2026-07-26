@@ -1,6 +1,19 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 4.0.2-automation.1
+
+### Beaufsichtigte Vision-Automatisierung
+
+- Compositor-Capture-Workbench mit profilbezogener Kalibrierung für HP, Suchbereich und Struktur-Templates hinzugefügt.
+- Modus „Nur beobachten“ sowie ein Vordergrund-Combat-FSM für Suche, Annäherung, Angriff, Heilung und Beute hinzugefügt.
+- Ausdrückliche Bestätigung der Beaufsichtigung, Pausen bei Fokusverlust und Timeout, Eingabe-Bereinigung und globaler Not-Aus mit `Ctrl+Shift+F12`.
+- Automatisierung von offizieller API, API Fetch, Plugins, Netzwerk, DOM, Debugger, Speicher und Hintergrund-Eingaben getrennt.
+- Tests, Sicherheitsdokumentation, Fork-Hinweise und eine eigene Paket-/Update-Identität hinzugefügt.
+
+Siehe [AUTOMATION.md](../../AUTOMATION.md) und [CHANGELOG.md](../../CHANGELOG.md).
+
+---
 ## 🆕 Version 4.0.0
 
 ### ✨ Neue Funktionen

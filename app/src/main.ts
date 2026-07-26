@@ -86,12 +86,16 @@ import {
     writeTesseractDiagnostic,
 } from "./main/startup/startupUtils";
 import { registerLogsHandlers } from "./main/ipc/handlers/logs";
+import { AutomationStore } from "./main/automation/store";
+import { AutomationService, type AutomationTarget } from "./main/automation/service";
+import { createAutomationWindowManager } from "./main/automation/window";
+import { registerAutomationIpc } from "./main/automation/ipc";
 
 // Vite declarations
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-app.setAppUserModelId("Flyff-U-Launcher");
+app.setAppUserModelId("Flyff-U-Automation");
 
 // ─── Event-Loop lag monitor (Linux freeze diagnostics) ───────────────
 // Measures how long the Node.js event loop is blocked. If we see high lag,
@@ -250,6 +254,67 @@ app.whenReady().then(async () => {
             webContentsToProfile.delete(wcId);
         },
         getInputActiveProfile,
+    });
+
+    const resolveAutomationTarget = (profileId: string): AutomationTarget | null => {
+        const candidates: AutomationTarget[] = [];
+        for (const entry of services.sessionRegistry.list()) {
+            const view = entry.tabsManager.getViewByProfile(profileId);
+            if (view && !view.webContents.isDestroyed() && !entry.window.isDestroyed()) {
+                candidates.push({
+                    profileId,
+                    hostWindow: entry.window,
+                    webContents: view.webContents,
+                    captureRect: view.getBounds(),
+                });
+            }
+        }
+        const legacyWindow = services.sessionWindow.get();
+        const legacyView = services.sessionTabs.getViewByProfile(profileId);
+        if (legacyWindow && legacyView && !legacyWindow.isDestroyed() && !legacyView.webContents.isDestroyed()) {
+            candidates.push({
+                profileId,
+                hostWindow: legacyWindow,
+                webContents: legacyView.webContents,
+                captureRect: legacyView.getBounds(),
+            });
+        }
+        const instance = services.instances.get(profileId);
+        if (instance && !instance.isDestroyed() && !instance.webContents.isDestroyed()) {
+            candidates.push({ profileId, hostWindow: instance, webContents: instance.webContents });
+        }
+        return candidates.find((candidate) => candidate.webContents.isFocused())
+            ?? candidates.find((candidate) => candidate.hostWindow.isFocused())
+            ?? candidates[0]
+            ?? null;
+    };
+
+    const automationWindow = createAutomationWindowManager({
+        preloadPath,
+        loadView,
+        onClosed: () => automationService.pause("Workbench closed; supervision ended"),
+    });
+    const automationService = new AutomationService({
+        store: new AutomationStore(path.join(userData, "automation")),
+        resolveTarget: resolveAutomationTarget,
+        onStatus: (status) => {
+            const win = automationWindow.get();
+            if (win && !win.isDestroyed()) win.webContents.send("automation:statusChanged", status);
+        },
+    });
+    registerAutomationIpc({
+        service: automationService,
+        window: automationWindow,
+        logError: (message) => logErr(message, "Automation IPC"),
+    });
+    if (!globalShortcut.register("CommandOrControl+Shift+F12", () => {
+        automationService.stop("Emergency stop hotkey");
+    })) {
+        logWarn("Could not register automation emergency stop shortcut", "Automation");
+    }
+    app.once("will-quit", () => {
+        automationService.dispose();
+        globalShortcut.unregister("CommandOrControl+Shift+F12");
     });
 
     // ACHTUNG: Initial-Befuellung der Profile-Caches (actionPadAnchors,
@@ -548,7 +613,7 @@ app.whenReady().then(async () => {
     // Register Core IPC
     // =========================================================================
     registerMainIpc({
-        profiles: services.profiles,
+        profiles: services.profiles as unknown as Parameters<typeof registerMainIpc>[0]["profiles"],
         sessionTabs: services.sessionTabs as unknown as Parameters<typeof registerMainIpc>[0]["sessionTabs"],
         sessionWindow: services.sessionWindow as unknown as Parameters<typeof registerMainIpc>[0]["sessionWindow"],
         sessionRegistry: services.sessionRegistry,

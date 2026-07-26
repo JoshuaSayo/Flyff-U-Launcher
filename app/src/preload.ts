@@ -240,6 +240,27 @@ shoppingListSavePrice: (itemId: number | string, price: number) => unwrapIpc(ipc
         ipcRenderer.on("logs:new", wrapped);
         return () => ipcRenderer.removeListener("logs:new", wrapped);
     },
+    automationOpen: (profileId?: string) => unwrapIpc<boolean>(ipcRenderer.invoke("automation:open", profileId)),
+    automationStatus: () => unwrapIpc<import("./shared/automation").AutomationStatus>(ipcRenderer.invoke("automation:status")),
+    automationGetConfig: (profileId: string) => unwrapIpc<{ config: import("./shared/automation").AutomationConfig; templates: import("./shared/automation").AutomationTemplateState }>(ipcRenderer.invoke("automation:getConfig", profileId)),
+    automationSaveConfig: (profileId: string, config: import("./shared/automation").AutomationConfig) => unwrapIpc<import("./shared/automation").AutomationConfig>(ipcRenderer.invoke("automation:saveConfig", profileId, config)),
+    automationPreview: (profileId: string) => unwrapIpc<{ dataUrl: string; width: number; height: number; capturedAt: string }>(ipcRenderer.invoke("automation:preview", profileId)),
+    automationCaptureTemplate: (request: import("./shared/automation").TemplateCaptureRequest) => unwrapIpc<{ config: import("./shared/automation").AutomationConfig; templates: import("./shared/automation").AutomationTemplateState }>(ipcRenderer.invoke("automation:captureTemplate", request)),
+    automationDeleteTemplate: (profileId: string, kind: import("./shared/automation").AutomationTemplateKind) => unwrapIpc<{ config: import("./shared/automation").AutomationConfig; templates: import("./shared/automation").AutomationTemplateState }>(ipcRenderer.invoke("automation:deleteTemplate", profileId, kind)),
+    automationStart: (profileId: string, acknowledged: boolean) => unwrapIpc<import("./shared/automation").AutomationStatus>(ipcRenderer.invoke("automation:start", profileId, acknowledged)),
+    automationPause: () => unwrapIpc<import("./shared/automation").AutomationStatus>(ipcRenderer.invoke("automation:pause")),
+    automationResume: (acknowledged: boolean) => unwrapIpc<import("./shared/automation").AutomationStatus>(ipcRenderer.invoke("automation:resume", acknowledged)),
+    automationStop: () => unwrapIpc<import("./shared/automation").AutomationStatus>(ipcRenderer.invoke("automation:stop")),
+    onAutomationStatus: (cb: (status: import("./shared/automation").AutomationStatus) => void) => {
+        const wrapped = (_e: IpcRendererEvent, status: import("./shared/automation").AutomationStatus) => cb(status);
+        ipcRenderer.on("automation:statusChanged", wrapped);
+        return () => ipcRenderer.removeListener("automation:statusChanged", wrapped);
+    },
+    onAutomationSelectProfile: (cb: (profileId: string) => void) => {
+        const wrapped = (_e: IpcRendererEvent, profileId: string) => cb(profileId);
+        ipcRenderer.on("automation:selectProfile", wrapped);
+        return () => ipcRenderer.removeListener("automation:selectProfile", wrapped);
+    },
 });
 // Note: overlay/hud/buff-wecker channels removed - will be handled by plugins
 const allowedSend = new Set<string>([

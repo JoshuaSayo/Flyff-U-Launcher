@@ -1,3 +1,10 @@
+### Flyff-U-Automation Fork
+- Added the supervised Vision Automation Workbench.
+- Observer-only is the default. Combat mode requires explicit supervision and a focused client.
+- Read `AUTOMATION.md` before enabling input. Use may violate game rules and put an account at risk.
+
+---
+
 ### In Arbeit
 - Multi Client Mobile-App
 - OCR optimierung

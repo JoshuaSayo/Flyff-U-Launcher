@@ -1,3 +1,7 @@
+## Beaufsichtigte Vision-Automatisierung (Fork-Funktion)
+
+Dieser Community-Fork enthält eine beaufsichtigte, rein bildbasierte Automatisierungs-Workbench. Standard ist „Nur beobachten“; der Combat-Modus erfordert eine ausdrückliche Bestätigung und steuert nur den ausgewählten Vordergrund-Client. Spielspeicher, Pakete, DOM-Zugriff, offizielle API-Daten und Plugin-Daten werden nicht verwendet. Die Nutzung kann gegen Spielregeln verstoßen und ein Konto gefährden. Lies vor der Aktivierung die vollständige [Automatisierungsanleitung](../../AUTOMATION.md).
+
 ## Grundfunktionen
 
 :::accordion[Profil erstellen]

@@ -124,16 +124,20 @@ describe('IPC Common Utilities', () => {
         });
 
         it('should not exceed max tokens when refilling', async () => {
+            let now = 1_000;
+            const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
             const limiter = new RateLimiter(3, 1000);
 
-            // Wait for potential overfill
-            await new Promise(r => setTimeout(r, 10));
+            // Advance a controlled clock so the refill reaches, but cannot
+            // race beyond, the configured capacity during the assertions.
+            now += 10;
 
             // Should still only have max tokens
             expect(limiter.tryConsume()).toBe(true);
             expect(limiter.tryConsume()).toBe(true);
             expect(limiter.tryConsume()).toBe(true);
             expect(limiter.tryConsume()).toBe(false);
+            nowSpy.mockRestore();
         });
     });
 

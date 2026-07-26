@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Wersja 4.0.2-automation.1
+
+### Nadzorowana automatyzacja wizyjna
+
+- Dodano przechwytywanie z kompozytora i kalibrację HP, obszaru wyszukiwania oraz szablonów strukturalnych dla każdego profilu.
+- Dodano tryb obserwatora i automat stanów walki działający tylko dla klienta na pierwszym planie.
+- Dodano potwierdzenie nadzoru, pauzę po utracie fokusu lub przekroczeniu limitu czasu, zwalnianie wejść oraz globalny wyłącznik `Ctrl+Shift+F12`.
+- Odizolowano automatyzację od oficjalnego API, API Fetch, wtyczek, sieci, DOM, debuggera, pamięci i wejścia w tle.
+
+Zobacz [AUTOMATION.md](../../AUTOMATION.md) i [CHANGELOG.md](../../CHANGELOG.md).
+
+---
 ## 🆕 Wersja 4.0.0
 
 ### ✨ Nowe funkcje

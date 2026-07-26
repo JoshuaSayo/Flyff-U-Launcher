@@ -1,6 +1,18 @@
 # 📦 Notes de patch
 
 ---
+## 🆕 Version 4.0.2-automation.1
+
+### Automatisation visuelle supervisée
+
+- Ajout d'un atelier de capture par compositeur avec calibration par profil des barres de vie, de la zone de recherche et des modèles structurels.
+- Ajout du mode observation et d'une machine à états de combat limitée au client au premier plan.
+- Ajout de la confirmation de supervision, des pauses sur perte de focus ou délai dépassé, du relâchement des entrées et de l'arrêt global `Ctrl+Shift+F12`.
+- Isolation de l'automatisation vis-à-vis de l'API officielle, d'API Fetch, des plugins, du réseau, du DOM, du débogueur, de la mémoire et des entrées en arrière-plan.
+
+Voir [AUTOMATION.md](../../AUTOMATION.md) et [CHANGELOG.md](../../CHANGELOG.md).
+
+---
 ## 🆕 Version 4.0.0
 
 ### ✨ Nouvelles fonctionnalités

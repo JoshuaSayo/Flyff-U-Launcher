@@ -23,6 +23,7 @@ import { loadFeatureFlags, loadClientSettings } from "./settings";
 import { qs, clear, createWebview, showToast } from "./dom-utils";
 import { renderLauncher } from "./launcher";
 import { renderSession } from "./session";
+import { renderAutomation } from "./automation";
 import { initControllerNav } from "./controller-nav";
 
 // Global error diagnostics to catch runtime issues in renderer/settings UI
@@ -112,6 +113,8 @@ async function main() {
         return renderLauncher(root);
     if (view === "session")
         return renderSession(root);
+    if (view === "automation")
+        return renderAutomation(root);
     if (view === "instance") {
         const profileId = qs().get("profileId") ?? "";
         return renderInstance(root, profileId);

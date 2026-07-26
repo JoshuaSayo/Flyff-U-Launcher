@@ -1,0 +1,39 @@
+import { describe, expect, it } from "vitest";
+import { decideAutomationState, type FsmObservation } from "./fsm";
+
+const base: FsmObservation = {
+    mode: "combat",
+    playerHp: 0.9,
+    targetVisible: false,
+    lootVisible: false,
+    deathVisible: false,
+    elapsedInStateMs: 100,
+    healThreshold: 0.4,
+    safeHpThreshold: 0.75,
+    approachTimeoutMs: 5000,
+    lootTimeoutMs: 3500,
+    lostTargetFrames: 0,
+};
+
+describe("automation FSM", () => {
+    it("moves from search to approach when a target is structurally matched", () => {
+        expect(decideAutomationState("searching", { ...base, targetVisible: true })).toBe("approaching");
+    });
+
+    it("prioritizes healing when player HP is unsafe", () => {
+        expect(decideAutomationState("attacking", { ...base, playerHp: 0.2, targetVisible: true })).toBe("healing");
+    });
+
+    it("moves to loot only after consecutive target loss", () => {
+        expect(decideAutomationState("attacking", { ...base, lostTargetFrames: 2 })).toBe("attacking");
+        expect(decideAutomationState("attacking", { ...base, lostTargetFrames: 3 })).toBe("looting");
+    });
+
+    it("pauses when a death template is visible", () => {
+        expect(decideAutomationState("attacking", { ...base, deathVisible: true })).toBe("paused");
+    });
+
+    it("keeps observer mode free of action states", () => {
+        expect(decideAutomationState("observing", { ...base, mode: "observer", playerHp: 0.1, targetVisible: true })).toBe("observing");
+    });
+});

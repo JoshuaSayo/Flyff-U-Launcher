@@ -24,7 +24,7 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
 
     const feedConfig: Record<string, string> = {
         provider: "github",
-        owner: "GH-Praxa",
+        owner: "JoshuaSayo",
         repo: "Flyff-U-Launcher",
     };
     if (process.env.GH_TOKEN) {
@@ -167,7 +167,7 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
             // Use GenericProvider pointing directly at this release's assets.
             // Each release has its own latest.yml / latest-linux.yml / latest-mac.yml,
             // so the GenericProvider reads the correct version info.
-            const releaseAssetUrl = `https://github.com/GH-Praxa/Flyff-U-Launcher/releases/download/${release.tag_name}/`;
+            const releaseAssetUrl = `https://github.com/JoshuaSayo/Flyff-U-Launcher/releases/download/${release.tag_name}/`;
 
             autoUpdater.allowDowngrade = true;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -220,7 +220,7 @@ function fetchGitHubReleases(): Promise<GitHubRelease[]> {
     return new Promise((resolve, reject) => {
         const options = {
             hostname: "api.github.com",
-            path: "/repos/GH-Praxa/Flyff-U-Launcher/releases?per_page=30",
+            path: "/repos/JoshuaSayo/Flyff-U-Launcher/releases?per_page=30",
             headers: {
                 "User-Agent": "Flyff-U-Launcher",
                 Accept: "application/vnd.github+json",

@@ -1,11 +1,11 @@
 {
-  "name": "Flyff-U-Launcher",
-  "productName": "Flyff-U-Launcher",
-  "version": "4.0.2",
-  "description": "My Electron application description",
+  "name": "flyff-u-automation",
+  "productName": "Flyff-U-Automation",
+  "version": "4.0.2-automation.1",
+  "description": "Supervised, vision-only automation fork of Flyff-U-Launcher",
   "repository": {
     "type": "git",
-    "url": "https://github.com/GH-Praxa/Flyff-U-Launcher.git"
+    "url": "https://github.com/JoshuaSayo/Flyff-U-Launcher.git"
   },
   "main": ".vite/build/main.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "name": "Praxa",
     "email": "daniellink94@gmail.com"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "devDependencies": {
     "@electron-forge/cli": "^7.10.2",
     "@electron-forge/maker-deb": "^7.10.2",
@@ -61,11 +61,17 @@
     "@fontsource/roboto": "^5.2.10",
     "@fontsource/ubuntu": "^5.2.8",
     "@types/adm-zip": "^0.5.7",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "electron-squirrel-startup": "^1.0.1",
-    "electron-updater": "^6.7.3",
+    "electron-updater": "^6.8.9",
     "semver": "^7.6.0",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "zod": "^4.2.1"
+  },
+  "allowScripts": {
+    "electron@40.6.1": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.21.5": true,
+    "sharp@0.35.3": true
   }
 }

@@ -1,13 +1,13 @@
 <div align="center">
 
-# Flyff-U-Launcher
+# Flyff-U-Automation
 
 **Inoffizieller Desktop-Launcher für Flyff Universe**
 Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in einer App.
 
-[![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
+[![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.1.0-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.1-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-März_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -15,7 +15,9 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 > **Getestet auf:** Windows 11 | Linux Mint 22.3 | macOS Tahoe 26.2
 
-> Der Launcher hält sich an die Spielregeln. Keine Automationen oder Eingriffe in das Spielgeschehen.
+> **Geänderter Community-Fork:** Diese Version enthält eine beaufsichtigte, rein bildbasierte Automatisierungs-Workbench. Die Nutzung kann gegen Spielregeln verstoßen und ein Spielkonto gefährden. Nutzung auf eigenes Risiko.
+
+Dieser GPL-3.0-Fork basiert auf [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-Praxa/Flyff-U-Launcher). Er ist nicht mit Gala Lab, Wemade Connect, PlayPark oder dem ursprünglichen Projektbetreiber verbunden. Siehe [FORK_NOTICE.md](FORK_NOTICE.md).
 
 [English version below](#english)
 
@@ -27,6 +29,17 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 ---
 
 ## Funktionen
+
+### Beaufsichtigte Vision-Automatisierung
+
+- Liest ausschließlich lokal aufgenommene Bildpunkte aus dem Electron-Compositor; kein Speicherzugriff, keine Pakete, keine DOM-Inspektion und keine Client-Modifikation
+- Startet sicher im Modus **Nur beobachten**; der Combat-FSM muss pro Profil ausdrücklich gewählt und bestätigt werden
+- Kalibriert Spieler-HP, Ziel-HP und Suchbereich direkt auf einer aktuellen Vorschau
+- Verwendet lokale Struktur-Templates für Ziel, Beute und Tod; offizielle API- und Plugin-Daten sind technisch vom Automatisierungspfad getrennt
+- Pausiert bei Fokusverlust, geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
+- Globaler Not-Aus: `Ctrl+Shift+F12`
+
+Vollständige Einrichtung, Sicherheitsgrenzen und Fehlerbehebung: [AUTOMATION.md](AUTOMATION.md).
 
 ### Multi-Profil-System
 - Profile anlegen, umbenennen, klonen, löschen und per Drag & Drop sortieren
@@ -188,9 +201,9 @@ Plugins werden im plattformspezifischen Datenverzeichnis unter `plugins/` abgele
 
 | Plattform | Download | Datei |
 |-----------|----------|-------|
-| **Windows** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.exe` Setup |
-| **macOS** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` (arm64) |
-| **Linux** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
+| **Windows** | [Neueste Version](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases) | `.exe` Setup |
+| **macOS** | [Neueste Version](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases) | `.dmg` (arm64) |
+| **Linux** | [Neueste Version](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
 
 1. Passende Datei herunterladen und installieren
 2. Launcher starten
@@ -272,9 +285,9 @@ Lizenz: [GPL-3.0](LICENSE)
 **Unofficial desktop launcher for Flyff Universe**
 Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one app.
 
-[![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
+[![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.1.0-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.1-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-March_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -282,7 +295,9 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 > **Tested on:** Windows 11 | Linux Mint 22.3 | macOS Tahoe 26.2
 
-> The launcher follows the game rules. No automation or interference with gameplay.
+> **Modified community fork:** This build contains a supervised, vision-only automation workbench. Its use may violate game rules and put a game account at risk. Use it at your own risk.
+
+This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-Praxa/Flyff-U-Launcher). It is not affiliated with Gala Lab, Wemade Connect, PlayPark, or the upstream maintainer. See [FORK_NOTICE.md](FORK_NOTICE.md).
 
 
 </div>
@@ -290,6 +305,17 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 ---
 
 ## Features
+
+### Supervised Vision Automation
+
+- Reads only locally captured pixels from Electron's compositor; no memory access, packets, DOM inspection, or client modification
+- Starts safely in **Observer only** mode; the combat FSM must be selected and acknowledged per profile
+- Calibrates player HP, target HP, and the target scan area on a current frame preview
+- Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
+- Pauses on focus loss, workbench close, detected death, and every state timeout
+- Global emergency stop: `Ctrl+Shift+F12`
+
+For complete setup, safety boundaries, and troubleshooting, read [AUTOMATION.md](AUTOMATION.md).
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles
@@ -451,9 +477,9 @@ Drop plugins into the platform-specific data directory under `plugins/` — they
 
 | Platform | Download | File |
 |----------|----------|------|
-| **Windows** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.exe` Setup |
-| **macOS** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` (arm64) |
-| **Linux** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
+| **Windows** | [Latest Release](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases) | `.exe` Setup |
+| **macOS** | [Latest Release](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases) | `.dmg` (arm64) |
+| **Linux** | [Latest Release](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
 
 1. Download the appropriate file and install
 2. Launch the application

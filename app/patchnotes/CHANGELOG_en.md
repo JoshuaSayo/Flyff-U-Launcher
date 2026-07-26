@@ -1,6 +1,19 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 4.0.2-automation.1
+
+### Supervised Vision Automation
+
+- Added a compositor-capture workbench with per-profile HP, scan-area, and structural-template calibration.
+- Added observer-only mode and a foreground-only combat FSM for search, approach, attack, heal, and loot.
+- Added explicit supervision acknowledgement, focus-loss and timeout pauses, held-input cleanup, and a global `Ctrl+Shift+F12` emergency stop.
+- Isolated automation from official API, API Fetch, plugin, network, DOM, debugger, memory, and background-input paths.
+- Added tests, security documentation, fork attribution, and a separate package/update identity.
+
+See [AUTOMATION.md](../../AUTOMATION.md) and [CHANGELOG.md](../../CHANGELOG.md).
+
+---
 ## 🆕 Version 4.0.0
 
 ### ✨ New Features

@@ -1,4 +1,11 @@
 export {};
+import type {
+    AutomationConfig,
+    AutomationStatus,
+    AutomationTemplateKind,
+    AutomationTemplateState,
+    TemplateCaptureRequest,
+} from "./src/shared/automation";
 type Rect = {
     x: number;
     y: number;
@@ -208,6 +215,19 @@ declare global {
             appCheckForUpdates: () => Promise<{ ok: boolean; version?: string; error?: string }>;
             appListReleases: () => Promise<{ ok: boolean; error?: string; releases?: Array<{ version: string; tag: string; name: string; date: string; prerelease: boolean; current: boolean }> }>;
             appInstallVersion: (version: string) => Promise<{ ok: boolean; error?: string }>;
+            automationOpen: (profileId?: string) => Promise<boolean>;
+            automationStatus: () => Promise<AutomationStatus>;
+            automationGetConfig: (profileId: string) => Promise<{ config: AutomationConfig; templates: AutomationTemplateState }>;
+            automationSaveConfig: (profileId: string, config: AutomationConfig) => Promise<AutomationConfig>;
+            automationPreview: (profileId: string) => Promise<{ dataUrl: string; width: number; height: number; capturedAt: string }>;
+            automationCaptureTemplate: (request: TemplateCaptureRequest) => Promise<{ config: AutomationConfig; templates: AutomationTemplateState }>;
+            automationDeleteTemplate: (profileId: string, kind: AutomationTemplateKind) => Promise<{ config: AutomationConfig; templates: AutomationTemplateState }>;
+            automationStart: (profileId: string, acknowledged: boolean) => Promise<AutomationStatus>;
+            automationPause: () => Promise<AutomationStatus>;
+            automationResume: (acknowledged: boolean) => Promise<AutomationStatus>;
+            automationStop: () => Promise<AutomationStatus>;
+            onAutomationStatus: (cb: (status: AutomationStatus) => void) => () => void;
+            onAutomationSelectProfile: (cb: (profileId: string) => void) => () => void;
             // Plugin management
             pluginsList: () => Promise<PluginStateInfo[]>;
             pluginsListAll: () => Promise<PluginStateInfo[]>;

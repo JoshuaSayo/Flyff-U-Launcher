@@ -1,3 +1,7 @@
+## Supervised Vision Automation (fork feature)
+
+This community fork includes a supervised, vision-only automation workbench. It defaults to observer-only mode; combat mode requires an explicit acknowledgement and controls only the selected foreground client. It does not use game memory, packets, DOM access, official-API data, or plugin data. Use may violate game rules and put an account at risk. Read the complete [automation guide](../../AUTOMATION.md) before enabling it.
+
 ## Basic Features
 
 :::accordion[Create Profile]

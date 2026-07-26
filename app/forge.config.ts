@@ -17,9 +17,9 @@ import crypto from "crypto";
 const iconPath = process.platform === "darwin"
     ? path.resolve(__dirname, "src/assets/icons/flyff.icns")
     : path.resolve(__dirname, "src/assets/icons/flyff.ico");
-const WIX_UPGRADE_CODE = "f3dd0e42-5e61-4709-b2ad-820051fa8d2a"; // keep stable so MSI upgrades replace existing installs
+const WIX_UPGRADE_CODE = "8bc64745-61f5-46cb-bade-9638cdf21c1b"; // automation fork identity; never replace upstream installs
 const KILL_APP_ACTION = `
-    <CustomAction Id="KillFlyffLauncher" Directory="TARGETDIR" ExeCommand="cmd.exe /C taskkill /F /IM Flyff-U-Launcher.exe /T" Execute="deferred" Impersonate="no" Return="ignore" />
+    <CustomAction Id="KillFlyffLauncher" Directory="TARGETDIR" ExeCommand="cmd.exe /C taskkill /F /IM Flyff-U-Automation.exe /T" Execute="deferred" Impersonate="no" Return="ignore" />
 `;
 const KILL_APP_SEQUENCE = `
     <InstallExecuteSequence>
@@ -140,7 +140,7 @@ const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
         icon: iconPath,
-        executableName: "Flyff-U-Launcher",
+        executableName: "Flyff-U-Automation",
         extraResource,
     },
     rebuildConfig: {},
@@ -188,11 +188,11 @@ const config: ForgeConfig = {
     },
     makers: [
         new MakerSquirrel({
-            name: "FlyffULauncher",
+            name: "FlyffUAutomation",
             authors: "Praxa",
-            description: "Flyff-U-Launcher - Multi-Instance Launcher for Flyff Universe",
+            description: "Flyff-U-Automation - supervised vision automation for Flyff Universe",
             setupIcon: iconPath,
-            setupExe: "Flyff-U-Launcher-Setup.exe",
+            setupExe: "Flyff-U-Automation-Setup.exe",
             noMsi: true,
             // Icon for the application shortcut (uses the exe icon from packagerConfig)
             // Desktop and Start Menu shortcuts are created via Update.exe --createShortcut in main.ts
@@ -200,14 +200,14 @@ const config: ForgeConfig = {
         new MakerWix({
             language: 1033,
             manufacturer: "Praxa",
-            description: "Flyff-U-Launcher",
+            description: "Flyff-U-Automation",
             icon: iconPath,
             // appIconPath: iconPath, // not in MakerWixConfig type
-            shortcutName: "Flyff-U-Launcher",
-            shortcutFolderName: "Flyff-U-Launcher",
+            shortcutName: "Flyff-U-Automation",
+            shortcutFolderName: "Flyff-U-Automation",
             // createDesktopShortcut: true, // not in MakerWixConfig type
-            programFilesFolderName: "Flyff-U-Launcher",
-            exe: "Flyff-U-Launcher",
+            programFilesFolderName: "Flyff-U-Automation",
+            exe: "Flyff-U-Automation",
             arch: "x64",
             upgradeCode: WIX_UPGRADE_CODE,
             defaultInstallMode: "perMachine",
@@ -239,7 +239,7 @@ const config: ForgeConfig = {
         new MakerDeb({
             options: {
                 name: "flyff-u-launcher",
-                productName: "Flyff-U-Launcher",
+                productName: "Flyff-U-Automation",
                 genericName: "Game Launcher",
                 description: "Multi-Instance Launcher for Flyff Universe",
                 categories: ["Game"],
@@ -249,7 +249,7 @@ const config: ForgeConfig = {
         new MakerRpm({
             options: {
                 name: "flyff-u-launcher",
-                productName: "Flyff-U-Launcher",
+                productName: "Flyff-U-Automation",
                 genericName: "Game Launcher",
                 description: "Multi-Instance Launcher for Flyff Universe",
                 categories: ["Game"],
@@ -270,7 +270,7 @@ const config: ForgeConfig = {
                 options: {
                     categories: ["Game"],
                     icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
-                    bin: "Flyff-U-Launcher",
+                    bin: "Flyff-U-Automation",
                 },
             },
         },
@@ -322,7 +322,7 @@ const config: ForgeConfig = {
     publishers: [
         new PublisherGithub({
             repository: {
-                owner: "GH-Praxa",
+                owner: "JoshuaSayo",
                 name: "Flyff-U-Launcher",
             },
             // Wenn der Workflow mit input `prerelease=true` läuft, veröffentlichen wir als Pre-Release

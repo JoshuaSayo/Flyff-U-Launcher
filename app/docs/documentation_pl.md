@@ -1,3 +1,7 @@
+## Nadzorowana automatyzacja wizyjna (funkcja forka)
+
+Ten fork społecznościowy zawiera nadzorowany moduł automatyzacji oparty wyłącznie na obrazie. Domyślnie działa tylko tryb obserwatora; tryb walki wymaga wyraźnego potwierdzenia i steruje wyłącznie wybranym klientem na pierwszym planie. Nie korzysta z pamięci gry, pakietów, DOM, oficjalnego API ani danych wtyczek. Użycie może naruszać zasady gry i zagrozić kontu. Przed włączeniem przeczytaj pełny [przewodnik automatyzacji](../../AUTOMATION.md).
+
 ## Podstawowe funkcje
 
 :::accordion[Tworzenie profilu]

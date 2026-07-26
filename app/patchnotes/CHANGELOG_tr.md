@@ -1,6 +1,18 @@
 # 📦 Yama Notları
 
 ---
+## 🆕 Sürüm 4.0.2-automation.1
+
+### Gözetimli görsel otomasyon
+
+- Profil başına HP, tarama alanı ve yapısal şablon kalibrasyonu içeren kompozitör yakalama çalışma alanı eklendi.
+- Yalnızca gözlemci modu ve sadece ön plandaki istemciyi yöneten savaş durum makinesi eklendi.
+- Gözetim onayı, odak kaybı ve zaman aşımında duraklatma, basılı girişleri bırakma ve global `Ctrl+Shift+F12` acil durdurma eklendi.
+- Otomasyon resmi API, API Fetch, eklentiler, ağ, DOM, hata ayıklayıcı, bellek ve arka plan girişinden ayrıldı.
+
+Bkz. [AUTOMATION.md](../../AUTOMATION.md) ve [CHANGELOG.md](../../CHANGELOG.md).
+
+---
 ## 🆕 Sürüm 4.0.0
 
 ### ✨ Yeni Özellikler

@@ -1,3 +1,7 @@
+## Automatisation visuelle supervisée (fonction du fork)
+
+Ce fork communautaire inclut un atelier d'automatisation supervisé fondé uniquement sur l'image. Le mode par défaut est l'observation; le mode combat exige une confirmation explicite et ne contrôle que le client sélectionné au premier plan. Il n'utilise ni mémoire du jeu, ni paquets, ni DOM, ni données de l'API officielle ou des plugins. Son utilisation peut enfreindre les règles du jeu et mettre un compte en danger. Consultez le [guide d'automatisation](../../AUTOMATION.md) avant de l'activer.
+
 ## Fonctionnalités de base
 
 :::accordion[Créer un profil]

@@ -82,7 +82,7 @@ export const githubIcon = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xm
 
 export const settingsIcon = "⚙";
 
-export const GITHUB_REPO_URL = "https://github.com/GH-Praxa/Flyff-U-Launcher/releases";
+export const GITHUB_REPO_URL = "https://github.com/JoshuaSayo/Flyff-U-Launcher/releases";
 
 export const GITHUB_PACKAGE_URL = "https://raw.githubusercontent.com/Sparx94/Flyff-U-Launcher/1.0/app/package.json";
 
