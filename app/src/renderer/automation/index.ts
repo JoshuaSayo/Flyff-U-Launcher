@@ -122,7 +122,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         el("p", "automationShortcut", "Global emergency stop: Ctrl+Shift+F12"),
     );
     const sidebar = el("aside", "automationSidebar");
-    sidebar.append(configPanel, calibrationPanel, sessionPanel);
+    sidebar.append(sessionPanel, configPanel, calibrationPanel);
     const layout = el("div", "automationLayout");
     layout.append(main, sidebar);
     root.append(header, toolbar, layout);

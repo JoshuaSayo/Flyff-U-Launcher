@@ -11,6 +11,7 @@ All notable changes made by the Flyff-U-Automation fork are documented here. Ups
 ### Fixed
 
 - An acknowledged Combat FSM start now restores and transfers foreground focus to the selected game client before input ownership is armed.
+- The workbench no longer clips the lower controls. Its right sidebar now scrolls independently, and the supervised-session controls remain visible at the top.
 
 ## [4.0.2-automation.1] - 2026-07-26
 
