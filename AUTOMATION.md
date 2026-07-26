@@ -2,6 +2,8 @@
 
 Flyff-U-Automation adds a local, foreground-only automation workbench to the upstream launcher. The feature is designed for explicit setup and continuous human supervision. It does not promise compliance with Flyff Universe rules, and using it may put a game account at risk.
 
+For a beginner-friendly click-by-click walkthrough, start with [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md).
+
 ## Scope and trust boundary
 
 Automation may use:

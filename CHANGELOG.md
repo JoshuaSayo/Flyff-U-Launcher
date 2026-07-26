@@ -2,6 +2,16 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## Unreleased
+
+### Added
+
+- Beginner-friendly `AUTOMATION_INSTRUCTIONS.md` with the complete calibration, observer-mode, Combat FSM, recovery, and troubleshooting workflow.
+
+### Fixed
+
+- An acknowledged Combat FSM start now restores and transfers foreground focus to the selected game client before input ownership is armed.
+
 ## [4.0.2-automation.1] - 2026-07-26
 
 ### Added

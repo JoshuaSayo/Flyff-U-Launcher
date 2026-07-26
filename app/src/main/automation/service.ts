@@ -117,9 +117,14 @@ export class AutomationService {
         const templates = await this.options.store.templateState(profileId);
         if (config.mode === "combat") {
             if (!acknowledged) throw new Error("Supervision acknowledgement is required before arming combat mode");
-            if (!target.webContents.isFocused()) throw new Error("Focus the selected game client before arming combat mode");
             if (!config.playerHpRoi) throw new Error("Calibrate the player HP region before arming combat mode");
             if (!templates.target) throw new Error("Capture a target template before arming combat mode");
+            if (target.hostWindow.isMinimized()) target.hostWindow.restore();
+            target.hostWindow.show();
+            target.hostWindow.focus();
+            target.webContents.focus();
+            await new Promise<void>((resolve) => setImmediate(resolve));
+            if (!target.webContents.isFocused()) throw new Error("The selected game client could not receive foreground focus");
             this.input.claim(profileId, target.webContents);
         }
         this.config = config;

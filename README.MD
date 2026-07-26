@@ -39,7 +39,7 @@ Dieser GPL-3.0-Fork basiert auf [GH-Praxa/Flyff-U-Launcher](https://github.com/G
 - Pausiert bei Fokusverlust, geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
 - Globaler Not-Aus: `Ctrl+Shift+F12`
 
-Vollständige Einrichtung, Sicherheitsgrenzen und Fehlerbehebung: [AUTOMATION.md](AUTOMATION.md).
+Erste Schritte: [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). Technische Sicherheitsgrenzen: [AUTOMATION.md](AUTOMATION.md).
 
 ### Multi-Profil-System
 - Profile anlegen, umbenennen, klonen, löschen und per Drag & Drop sortieren
@@ -315,7 +315,7 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Pauses on focus loss, workbench close, detected death, and every state timeout
 - Global emergency stop: `Ctrl+Shift+F12`
 
-For complete setup, safety boundaries, and troubleshooting, read [AUTOMATION.md](AUTOMATION.md).
+For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles
