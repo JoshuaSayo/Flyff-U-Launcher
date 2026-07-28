@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectBarFill, matchTemplate, type PixelFrame } from "./frameAnalyzer";
+import { detectBarFill, matchTemplate, structuralEdgeDensity, type PixelFrame } from "./frameAnalyzer";
 
 function frame(width: number, height: number, color: [number, number, number] = [0, 0, 0]): PixelFrame {
     const data = new Uint8Array(width * height * 4);
@@ -43,5 +43,16 @@ describe("frameAnalyzer", () => {
         expect(match!.score).toBeGreaterThan(0.95);
         expect(match!.x).toBeGreaterThanOrEqual(18);
         expect(match!.x).toBeLessThanOrEqual(22);
+    });
+
+    it("rejects smooth regions as low-detail templates", () => {
+        const smooth = frame(80, 40, [35, 35, 35]);
+        for (let y = 0; y < smooth.height; y++) {
+            for (let x = 0; x < smooth.width; x++) {
+                const value = 35 + Math.floor(x / 20);
+                setPixel(smooth, x, y, [value, value, value]);
+            }
+        }
+        expect(structuralEdgeDensity(smooth)).toBeLessThan(0.015);
     });
 });

@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.2
+
+### Hotfix für die Automatisierungserfassung
+
+- Die Vorschau und der FSM erfassen nun die ausgewählte eingebettete Flyff-Spielfläche statt des Launcher-Hintergrunds.
+- Alte Pixelbereiche und Vorlagen werden beim Upgrade einmalig gelöscht; Tasten- und Verhaltenseinstellungen bleiben erhalten.
+- Normalisierte Strukturkorrelation und Prüfungen gegen zu große oder detailarme Vorlagen und HP-Bereiche wurden ergänzt.
+
+Die erforderliche einmalige Neukalibrierung ist in [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) beschrieben.
+
+---
 ## 🆕 Version 4.0.2-automation.1
 
 ### Beaufsichtigte Vision-Automatisierung

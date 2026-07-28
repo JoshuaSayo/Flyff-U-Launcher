@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.2
+
+### Poprawka przechwytywania automatyzacji
+
+- Podgląd i FSM przechwytują teraz wybraną osadzoną powierzchnię gry Flyff zamiast tła launchera.
+- Stare regiony pikseli i szablony są usuwane jednorazowo po aktualizacji; ustawienia klawiszy i zachowania pozostają zachowane.
+- Dodano znormalizowane dopasowanie strukturalne oraz zabezpieczenia przed zbyt dużymi i mało szczegółowymi zaznaczeniami.
+
+Wymagana jednorazowa ponowna kalibracja jest opisana w [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## 🆕 Wersja 4.0.2-automation.1
 
 ### Nadzorowana automatyzacja wizyjna

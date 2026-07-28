@@ -14,6 +14,8 @@ This is the practical, click-by-click guide for the supervised Vision Automation
 
 The automation controls one selected foreground game client. It does not control an external Brave, Chrome, or Edge window.
 
+> **Required after upgrading to 4.0.2-automation.2:** The old vision regions and templates are cleared once because earlier builds captured the parent launcher background instead of the embedded game. Click **Refresh frame**, confirm you can see the actual Flyff game, and recalibrate the pixel regions and templates below. Your keys, thresholds, and timing settings are preserved.
+
 ## Quick start: Observer mode
 
 Use Observer mode first. It analyzes the screen without sending mouse or keyboard input.
@@ -24,7 +26,7 @@ Use Observer mode first. It analyzes the screen without sending mouse or keyboar
 4. In the session window, click the **★ Tools** button.
 5. Select **Supervised Automation**.
 6. Select the correct **Client profile** at the top of the workbench.
-7. Click **Refresh frame**.
+7. Click **Refresh frame** and confirm the actual game scene is visible—not a black panel or blue/red launcher gradient.
 8. Leave **Mode** set to **Observer only**.
 9. Click **Save profile**.
 10. Click **Start**.
@@ -58,6 +60,7 @@ Click **Player HP region**, then select only the colored interior of the player'
 - Include the full horizontal fill length.
 - Exclude the frame, HP text, portrait, icons, and shadows.
 - Calibrate while the bar is visible and preferably full.
+- If the selection covers a large panel or much of the screen, the workbench rejects it; select only the bar interior.
 
 Player HP calibration is required before Combat FSM mode can start.
 
@@ -87,7 +90,7 @@ Templates are saved locally for the selected profile. The badge changes from **m
 4. Click **Capture target label**.
 5. Drag a tight rectangle around the distinctive label or feature.
 
-Use a small structure with clear edges. Avoid animated effects, the surrounding landscape, or a large part of the monster. A target template is required for Combat FSM mode.
+Use a small structure with clear edges. Avoid animated effects, the surrounding landscape, or a large part of the monster. Oversized and low-detail selections are rejected because they create false matches. A target template is required for Combat FSM mode.
 
 ### Loot template
 
@@ -118,7 +121,7 @@ Before enabling combat:
 5. Repeat the same check for loot.
 6. Pause and recalibrate any region that behaves incorrectly.
 
-The default template threshold is `0.82`. Reduce it only in small steps if the intended image does not match. Raise it if unrelated objects match. Never tune only while the intended target is visible; test absent-target frames too.
+The default template threshold is `0.82`. It is applied to a normalized structural-correlation score. Reduce it only in small steps if the intended image does not match. Raise it if unrelated objects match. Never tune only while the intended target is visible; test absent-target frames too.
 
 ## Configure Combat FSM
 
@@ -190,7 +193,7 @@ The preview should show the selected launcher game view. If it is black:
 5. Keep the game view visible and click **Refresh frame**.
 6. Restart the launcher after updating the graphics driver if the visible Electron game view is also black.
 
-The app uses Electron compositor capture specifically because older GDI/BitBlt capture commonly returns black frames for hardware-accelerated Chromium content.
+On Windows and macOS, the app captures the selected embedded game `WebContents` directly. It does not use GDI/BitBlt and it does not capture the parent launcher renderer behind the game.
 
 ## If combat does not start
 
@@ -202,6 +205,8 @@ Read the error toast and verify:
 - the target template badge says **ready**;
 - the supervision checkbox is checked;
 - the selected game client can be restored and focused.
+
+If the state immediately changes to **PAUSED** with “Death screen detected” while the character is alive, verify that you are running `4.0.2-automation.2` or newer. Refresh the frame, confirm it shows the game, then recapture a small death-dialog detail only when that dialog is actually visible.
 
 ## If detection is unreliable
 

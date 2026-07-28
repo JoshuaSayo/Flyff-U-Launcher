@@ -13,7 +13,7 @@ import type {
     AutomationTemplateKind,
     TemplateCaptureRequest,
 } from "../../shared/automation";
-import { decodePng, detectBarFill, extractNormalizedRect, matchTemplate, type PixelFrame, type TemplateMatch } from "./frameAnalyzer";
+import { decodePng, detectBarFill, extractNormalizedRect, matchTemplate, structuralEdgeDensity, type PixelFrame, type TemplateMatch } from "./frameAnalyzer";
 import { decideAutomationState } from "./fsm";
 import { AutomationInputFacade } from "./inputFacade";
 import { AutomationStore } from "./store";
@@ -32,6 +32,12 @@ export type AutomationServiceOptions = {
 };
 
 type CapturedFrame = { png: Buffer; pixels: PixelFrame; captureMs: number };
+
+const TEMPLATE_LIMITS: Record<AutomationTemplateKind, { width: number; height: number; area: number }> = {
+    target: { width: 0.35, height: 0.20, area: 0.05 },
+    loot: { width: 0.35, height: 0.25, area: 0.06 },
+    death: { width: 0.65, height: 0.50, area: 0.20 },
+};
 
 const EMPTY_METRICS: AutomationMetrics = {
     playerHp: null,
@@ -64,6 +70,7 @@ export class AutomationService {
     private lostTargetFrames = 0;
     private generation = 0;
     private templateCache = new Map<string, PixelFrame>();
+    private captureSourceLogged = new Set<string>();
 
     constructor(private readonly options: AutomationServiceOptions) {}
 
@@ -88,10 +95,19 @@ export class AutomationService {
 
     async captureTemplate(request: TemplateCaptureRequest): Promise<void> {
         this.assertEditable(request.profileId);
+        const limits = TEMPLATE_LIMITS[request.kind];
+        if (request.rect.width > limits.width
+            || request.rect.height > limits.height
+            || request.rect.width * request.rect.height > limits.area) {
+            throw new Error(request.kind + " selection is too large; drag tightly around one distinctive visual element");
+        }
         const captured = await this.capture(request.profileId);
         const template = await extractNormalizedRect(captured.png, request.rect);
         const decoded = await decodePng(template);
         if (decoded.width < 4 || decoded.height < 4) throw new Error("Selected template is too small");
+        if (structuralEdgeDensity(decoded) < 0.015) {
+            throw new Error(request.kind + " selection has too little visual detail; include text, an icon, or clear edges");
+        }
         await this.options.store.saveTemplate(request.profileId, request.kind, template);
         this.templateCache.set(this.options.store.templatePath(request.profileId, request.kind), decoded);
         logInfo(`Captured ${request.kind} template for ${request.profileId} (${decoded.width}x${decoded.height})`, "Automation");
@@ -173,6 +189,7 @@ export class AutomationService {
     dispose(): void {
         this.stop("Application shutting down");
         this.templateCache.clear();
+        this.captureSourceLogged.clear();
     }
 
     private assertEditable(profileId: string): void {
@@ -197,11 +214,19 @@ export class AutomationService {
             const target = this.options.resolveTarget(profileId);
             if (!target) throw new Error("Selected client is no longer open");
             const started = performance.now();
-            const image = await safeCaptureWindow(target.hostWindow, target.captureRect);
+            const contentsType = target.webContents.getType();
+            const captureGameSurface = process.platform !== "linux";
+            const image = captureGameSurface
+                ? await target.webContents.capturePage(undefined, { stayAwake: false })
+                : await safeCaptureWindow(target.hostWindow, target.captureRect);
             if (image.isEmpty()) throw new Error("Compositor capture returned an empty frame");
             const png = image.toPNG();
             if (png.length === 0) throw new Error("Compositor capture returned no pixels");
             const pixels = await decodePng(png);
+            if (!this.captureSourceLogged.has(profileId)) {
+                this.captureSourceLogged.add(profileId);
+                logInfo("Capturing game surface for " + profileId + ": " + contentsType + " " + pixels.width + "x" + pixels.height, "Automation");
+            }
             return { png, pixels, captureMs: performance.now() - started };
         })();
         try {

@@ -8,7 +8,7 @@ For a beginner-friendly click-by-click walkthrough, start with [AUTOMATION_INSTR
 
 Automation may use:
 
-- pixels captured from the selected Electron game view through the host window compositor;
+- pixels captured directly from the selected embedded game `WebContents` on Windows and macOS, with the platform-safe host capture fallback retained on Linux;
 - locally saved regions of interest and image templates;
 - the selected client's foreground input channel;
 - per-profile settings stored under the launcher's user-data directory.
@@ -34,7 +34,7 @@ The architectural boundary is enforced by an automated test in `app/src/main/aut
 
 ## Open the workbench
 
-In a running session, open **Tools > Supervised Automation**. Select the intended client profile, then click **Refresh frame**. The preview is captured from the same compositor-backed game view used by the launcher, so it avoids the black frames commonly returned by GDI capture of hardware-accelerated Chromium content.
+In a running session, open **Tools > Supervised Automation**. Select the intended client profile, then click **Refresh frame**. On Windows and macOS, the preview comes directly from the selected embedded game `WebContents`, not from the parent session renderer behind it. This avoids both GDI black frames and the launcher's decorative background appearing in place of the game.
 
 Only the dedicated workbench can save automation configuration, capture templates, or start and control a run. Closing the workbench pauses an active run.
 
@@ -50,6 +50,8 @@ Choose a calibration action and drag a tight rectangle on the current preview:
 - **Capture death dialog**: a stable part of the death/respawn dialog.
 
 Template matching is brightness-normalized and structural. Tight selections with distinctive edges work better than large areas, animated effects, or single flat colors. Capture templates at the same UI scale used during operation.
+
+Version `4.0.2-automation.2` migrates the vision configuration to schema version 2. The first load preserves behavior, keys, and timing but clears version 1 HP regions and target/loot/death templates because those pixels may have come from the parent renderer. Confirm that the preview visibly shows Flyff, then recalibrate once. Oversized HP regions and oversized or low-detail templates are rejected.
 
 Click **Save profile** after changing regions, templates, keys, or thresholds. Calibration cannot be changed while the selected profile is armed; pause or stop first.
 
@@ -108,7 +110,7 @@ Use **Emergency stop** for a normal immediate stop, or press the global shortcut
 - Click **Refresh frame** after the game finishes loading.
 - Update the graphics driver and restart the launcher if Electron's compositor itself is black.
 
-The automation preview intentionally uses the launcher compositor instead of Win32 BitBlt. If the visible launcher game view is correct but the preview remains black, attach the launcher log and a screenshot to a GitHub issue.
+The Windows/macOS preview intentionally captures the selected game `WebContents` instead of Win32 BitBlt or the parent launcher window. If the visible launcher game view is correct but the preview remains black, attach the launcher log and a screenshot to a GitHub issue.
 
 ### HP is missing or inaccurate
 
@@ -125,7 +127,7 @@ The automation preview intentionally uses the launcher compositor instead of Win
 
 ### The session pauses immediately
 
-Read the status reason. Focus loss, death detection, and state timeouts intentionally pause. A capture or selected-client error moves the runtime to **Faulted**.
+Read the status reason. Focus loss, death detection, and state timeouts intentionally pause. A capture or selected-client error moves the runtime to **Faulted**. If an older build immediately reports death on a normal game frame, install `4.0.2-automation.2` or newer and perform the one-time recalibration.
 
 ## Data and logs
 

@@ -2,14 +2,22 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
-## Unreleased
+## [4.0.2-automation.2] - 2026-07-28
 
 ### Added
 
 - Beginner-friendly `AUTOMATION_INSTRUCTIONS.md` with the complete calibration, observer-mode, Combat FSM, recovery, and troubleshooting workflow.
 
+### Changed
+
+- Template matching now uses normalized cross-correlation so the configured confidence threshold measures structural similarity instead of brightness error.
+- Version 1 vision calibration is invalidated once on upgrade because it was captured from the wrong rendering surface. Behavior and key settings are preserved.
+
 ### Fixed
 
+- Windows automation capture now reads the selected game `WebContents` surface directly instead of capturing the parent session renderer behind its embedded BrowserView.
+- Template capture rejects oversized or low-detail selections that are likely to produce false target, loot, or death matches.
+- HP calibration rejects implausibly large regions instead of silently accepting most of the screen.
 - An acknowledged Combat FSM start now restores and transfers foreground focus to the selected game client before input ownership is armed.
 - The workbench no longer clips the lower controls. Its right sidebar now scrolls independently, and the supervised-session controls remain visible at the top.
 

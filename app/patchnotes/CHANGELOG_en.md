@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.2
+
+### Automation capture hotfix
+
+- Fixed the preview and FSM capture path to read the selected embedded Flyff game surface instead of the parent launcher background.
+- Old pixel regions and templates are cleared once on upgrade; keys and behavior settings are preserved.
+- Added normalized structural matching plus safeguards against oversized, low-detail templates and HP regions.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for the required one-time recalibration.
+
+---
 ## 🆕 Version 4.0.2-automation.1
 
 ### Supervised Vision Automation

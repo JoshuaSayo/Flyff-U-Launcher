@@ -1,6 +1,17 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.2
+
+### Correctif de capture de l'automatisation
+
+- L'aperçu et la FSM capturent désormais la surface de jeu Flyff intégrée sélectionnée au lieu de l'arrière-plan du lanceur.
+- Les anciennes régions et images modèles sont effacées une fois lors de la mise à niveau; les touches et réglages de comportement sont conservés.
+- Ajout d'une corrélation structurelle normalisée et de contrôles contre les sélections trop grandes ou sans détails.
+
+Consultez [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) pour le recalibrage unique requis.
+
+---
 ## 🆕 Version 4.0.2-automation.1
 
 ### Automatisation visuelle supervisée

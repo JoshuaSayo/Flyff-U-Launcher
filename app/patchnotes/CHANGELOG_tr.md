@@ -1,6 +1,17 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.2
+
+### Otomasyon yakalama düzeltmesi
+
+- Önizleme ve FSM artık başlatıcı arka planı yerine seçili gömülü Flyff oyun yüzeyini yakalıyor.
+- Eski piksel bölgeleri ve şablonlar yükseltmede bir kez temizlenir; tuş ve davranış ayarları korunur.
+- Normalleştirilmiş yapısal eşleştirme ile aşırı büyük veya düşük ayrıntılı seçimlere karşı kontroller eklendi.
+
+Gerekli tek seferlik yeniden kalibrasyon için [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) dosyasına bakın.
+
+---
 ## 🆕 Sürüm 4.0.2-automation.1
 
 ### Gözetimli görsel otomasyon

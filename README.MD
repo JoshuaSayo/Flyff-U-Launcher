@@ -308,7 +308,7 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 
 ### Supervised Vision Automation
 
-- Reads only locally captured pixels from Electron's compositor; no memory access, packets, DOM inspection, or client modification
+- Reads pixels directly from the selected embedded game surface on Windows; no memory access, packets, DOM inspection, or client modification
 - Starts safely in **Observer only** mode; the combat FSM must be selected and acknowledged per profile
 - Calibrates player HP, target HP, and the target scan area on a current frame preview
 - Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
@@ -316,6 +316,8 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Global emergency stop: `Ctrl+Shift+F12`
 
 For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
+
+Version `4.0.2-automation.2` fixes the blank/gradient preview that prevented the FSM from reaching input. Upgrading clears only the old pixel regions and templates; verify the preview shows the game, then recalibrate once.
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles

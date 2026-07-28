@@ -2,6 +2,8 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
+export const AUTOMATION_CONFIG_VERSION = 2 as const;
+
 export type AutomationState =
     | "stopped"
     | "observing"
@@ -21,7 +23,7 @@ export type NormalizedRect = {
 };
 
 export type AutomationConfig = {
-    version: 1;
+    version: typeof AUTOMATION_CONFIG_VERSION;
     profileId: string;
     mode: "observer" | "combat";
     playerHpRoi: NormalizedRect | null;
@@ -71,7 +73,7 @@ export type TemplateCaptureRequest = {
 
 export function defaultAutomationConfig(profileId: string): AutomationConfig {
     return {
-        version: 1,
+        version: AUTOMATION_CONFIG_VERSION,
         profileId,
         mode: "observer",
         playerHpRoi: null,
@@ -111,6 +113,12 @@ export function normalizeRect(value: unknown, fallback: NormalizedRect | null): 
     return { x, y, width, height };
 }
 
+function normalizeBarRect(value: unknown): NormalizedRect | null {
+    const rect = normalizeRect(value, null);
+    if (!rect || rect.width > 0.60 || rect.height > 0.18 || rect.width * rect.height > 0.06) return null;
+    return rect;
+}
+
 function normalizeKey(value: unknown, fallback: string): string {
     if (typeof value !== "string") return fallback;
     const key = value.trim().toUpperCase();
@@ -128,8 +136,8 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
         ...defaults,
         profileId,
         mode: input.mode === "combat" ? "combat" : "observer",
-        playerHpRoi: normalizeRect(input.playerHpRoi, null),
-        targetHpRoi: normalizeRect(input.targetHpRoi, null),
+        playerHpRoi: normalizeBarRect(input.playerHpRoi),
+        targetHpRoi: normalizeBarRect(input.targetHpRoi),
         targetScanRoi: normalizeRect(input.targetScanRoi, defaults.targetScanRoi) ?? defaults.targetScanRoi,
         healThreshold: finiteNumber(input.healThreshold, defaults.healThreshold, 0.05, 0.95),
         safeHpThreshold: finiteNumber(input.safeHpThreshold, defaults.safeHpThreshold, 0.10, 1),

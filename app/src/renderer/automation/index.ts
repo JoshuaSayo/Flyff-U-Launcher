@@ -31,7 +31,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     const header = el("header", "automationHeader");
     header.append(
         el("h1", "automationTitle", "Vision Automation Workbench"),
-        el("p", "automationSubtitle", "Supervised foreground control • compositor capture • local pixel analysis"),
+        el("p", "automationSubtitle", "Supervised foreground control • direct game-surface capture • local pixel analysis"),
         el("div", "automationSafety", "No memory access, packets, DOM inspection, official-API data, background control, or anti-cheat bypass."),
     );
 
@@ -241,6 +241,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const kind = selectedCalibration;
         try {
             if (kind === "playerHpRoi" || kind === "targetHpRoi" || kind === "targetScanRoi") {
+                if ((kind === "playerHpRoi" || kind === "targetHpRoi")
+                    && (rect.width > 0.60 || rect.height > 0.18 || rect.width * rect.height > 0.06)) {
+                    throw new Error("HP selection is too large; select only the colored interior of the bar");
+                }
                 config[kind] = rect;
                 canvasHint.textContent = "Region updated. Save the profile to persist it.";
             } else {
@@ -254,7 +258,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         }
     };
 
-    async function refreshFrame(): Promise<void> {
+    async function refreshFrame(showCalibrationGuidance = false): Promise<void> {
         if (refreshInFlight || !profileId()) return;
         refreshInFlight = true;
         refreshButton.disabled = true;
@@ -269,7 +273,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             frameImage = next;
             canvas.width = preview.width;
             canvas.height = preview.height;
-            canvasHint.textContent = `Captured ${preview.width}×${preview.height} at ${new Date(preview.capturedAt).toLocaleTimeString()}`;
+            const captured = `Captured ${preview.width}×${preview.height} at ${new Date(preview.capturedAt).toLocaleTimeString()}`;
+            canvasHint.textContent = showCalibrationGuidance && !config?.playerHpRoi && !templates.target
+                ? captured + ". Verify the game is visible, then recalibrate Player HP and capture a small target label."
+                : captured;
             draw();
         } catch (error) {
             canvasHint.textContent = error instanceof Error ? error.message : String(error);
@@ -284,7 +291,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         config = result.config;
         templates = result.templates;
         updateFields();
-        await refreshFrame();
+        await refreshFrame(true);
     }
 
     function applyStatus(status: AutomationStatus): void {
@@ -307,7 +314,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     }
 
     profileSelect.onchange = () => void loadProfile(profileId()).catch((error) => showToast(String(error), "error"));
-    refreshButton.onclick = () => void refreshFrame();
+    refreshButton.onclick = () => void refreshFrame(true);
     saveButton.onclick = async () => {
         if (!config) return;
         updateConfigFromFields();

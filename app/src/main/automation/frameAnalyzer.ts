@@ -96,6 +96,23 @@ function meanLuminance(frame: PixelFrame, x0: number, y0: number, width: number,
     return count > 0 ? total / count : 0;
 }
 
+/** Ratio of sampled neighboring pixels with a meaningful luminance edge. */
+export function structuralEdgeDensity(frame: PixelFrame): number {
+    if (frame.width < 2 || frame.height < 2) return 0;
+    const step = Math.max(1, Math.floor(Math.min(frame.width, frame.height) / 64));
+    let edges = 0;
+    let comparisons = 0;
+    for (let y = 0; y < frame.height - step; y += step) {
+        for (let x = 0; x < frame.width - step; x += step) {
+            const value = luminance(frame, x, y);
+            if (Math.abs(value - luminance(frame, x + step, y)) >= 18) edges++;
+            if (Math.abs(value - luminance(frame, x, y + step)) >= 18) edges++;
+            comparisons += 2;
+        }
+    }
+    return comparisons > 0 ? edges / comparisons : 0;
+}
+
 /** Multi-position, brightness-normalized structural template matching. */
 export function matchTemplate(frame: PixelFrame, template: PixelFrame, scanRect: NormalizedRect): TemplateMatch | null {
     const scan = toPixelRect(frame, scanRect);
@@ -103,23 +120,27 @@ export function matchTemplate(frame: PixelFrame, template: PixelFrame, scanRect:
     const sample = Math.max(1, Math.ceil(Math.min(template.width, template.height) / 12));
     const stride = Math.max(2, Math.floor(sample * 1.5));
     const templateMean = meanLuminance(template, 0, 0, template.width, template.height, sample);
-    let bestScore = -Infinity;
+    let bestScore = 0;
     let bestX = scan.x;
     let bestY = scan.y;
     for (let y = scan.y; y <= scan.y + scan.height - template.height; y += stride) {
         for (let x = scan.x; x <= scan.x + scan.width - template.width; x += stride) {
             const candidateMean = meanLuminance(frame, x, y, template.width, template.height, sample);
-            let error = 0;
-            let count = 0;
+            let covariance = 0;
+            let templateEnergy = 0;
+            let candidateEnergy = 0;
             for (let ty = 0; ty < template.height; ty += sample) {
                 for (let tx = 0; tx < template.width; tx += sample) {
                     const a = luminance(template, tx, ty) - templateMean;
                     const b = luminance(frame, x + tx, y + ty) - candidateMean;
-                    error += Math.min(255, Math.abs(a - b));
-                    count++;
+                    covariance += a * b;
+                    templateEnergy += a * a;
+                    candidateEnergy += b * b;
                 }
             }
-            const score = 1 - error / Math.max(1, count * 255);
+            const denominator = Math.sqrt(templateEnergy * candidateEnergy);
+            const correlation = denominator > 1e-6 ? covariance / denominator : -1;
+            const score = Math.max(0, Math.min(1, (correlation + 1) / 2));
             if (score > bestScore) {
                 bestScore = score;
                 bestX = x;
