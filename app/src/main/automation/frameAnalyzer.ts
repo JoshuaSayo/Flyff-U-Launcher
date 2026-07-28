@@ -18,6 +18,13 @@ export type TemplateMatch = {
     height: number;
 };
 
+export type RedCrosshairDetection = {
+    engaged: boolean;
+    score: number;
+    centerX: number | null;
+    centerY: number | null;
+};
+
 export async function decodePng(png: Buffer): Promise<PixelFrame> {
     const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     return { width: info.width, height: info.height, channels: info.channels, data };
@@ -83,6 +90,110 @@ export function detectBarFill(
         }
     }
     return Math.min(1, Math.max(0, (furthest + 1) / roi.width));
+}
+
+/**
+ * Detect Flyff's red combat crosshair near the monster that was clicked.
+ *
+ * The monster label remains the primary target detector. This confirmation
+ * combines saturated-red HSV segmentation with a three-direction radial
+ * structure so ordinary red bars or text do not count as engagement.
+ */
+export function detectRedCrosshair(
+    frame: PixelFrame,
+    scanRect: NormalizedRect,
+    near: { x: number; y: number } | null,
+): RedCrosshairDetection {
+    const empty: RedCrosshairDetection = {
+        engaged: false,
+        score: 0,
+        centerX: null,
+        centerY: null,
+    };
+    if (!near) return empty;
+
+    const scan = toPixelRect(frame, scanRect);
+    const minDimension = Math.min(frame.width, frame.height);
+    const searchRadius = Math.max(36, Math.min(90, Math.round(minDimension * 0.075)));
+    const outerRadius = Math.max(24, Math.min(72, Math.round(minDimension * 0.070)));
+    const innerRadius = Math.max(5, Math.min(14, Math.round(minDimension * 0.012)));
+    const candidateStep = Math.max(4, Math.min(10, Math.round(minDimension / 150)));
+    const sampleStep = minDimension >= 900 ? 2 : 1;
+    const extent = searchRadius + outerRadius;
+    const left = Math.max(scan.x, Math.round(near.x - extent));
+    const right = Math.min(scan.x + scan.width - 1, Math.round(near.x + extent));
+    const top = Math.max(scan.y, Math.round(near.y - extent));
+    const bottom = Math.min(scan.y + scan.height - 1, Math.round(near.y + extent));
+    const redPixels: Array<{ x: number; y: number }> = [];
+
+    for (let y = top; y <= bottom; y += sampleStep) {
+        for (let x = left; x <= right; x += sampleStep) {
+            const offset = (y * frame.width + x) * frame.channels;
+            const r = frame.data[offset] ?? 0;
+            const g = frame.data[offset + 1] ?? 0;
+            const b = frame.data[offset + 2] ?? 0;
+            const hsv = rgbToHsv(r, g, b);
+            const redHue = hsv.h <= 20 || hsv.h >= 340;
+            if (redHue && hsv.s >= 0.62 && hsv.v >= 0.48 && r >= 135 && r - Math.max(g, b) >= 28) {
+                redPixels.push({ x, y });
+            }
+        }
+    }
+    if (redPixels.length < 9) return empty;
+
+    const minSectorPixels = sampleStep === 1 ? 4 : 2;
+    let best = empty;
+    for (let cy = Math.round(near.y - searchRadius); cy <= near.y + searchRadius; cy += candidateStep) {
+        for (let cx = Math.round(near.x - searchRadius); cx <= near.x + searchRadius; cx += candidateStep) {
+            const sectors = [0, 0, 0, 0];
+            let total = 0;
+            let centerPixels = 0;
+            let minX = Number.POSITIVE_INFINITY;
+            let maxX = Number.NEGATIVE_INFINITY;
+            let minY = Number.POSITIVE_INFINITY;
+            let maxY = Number.NEGATIVE_INFINITY;
+            for (const pixel of redPixels) {
+                const dx = pixel.x - cx;
+                const dy = pixel.y - cy;
+                const distance = Math.hypot(dx, dy);
+                if (distance < innerRadius) {
+                    centerPixels++;
+                    continue;
+                }
+                if (distance > outerRadius) continue;
+                const sector = Math.abs(dx) >= Math.abs(dy)
+                    ? dx >= 0 ? 0 : 2
+                    : dy >= 0 ? 1 : 3;
+                sectors[sector]++;
+                total++;
+                minX = Math.min(minX, pixel.x);
+                maxX = Math.max(maxX, pixel.x);
+                minY = Math.min(minY, pixel.y);
+                maxY = Math.max(maxY, pixel.y);
+            }
+            const activeSectors = sectors.filter((count) => count >= minSectorPixels).length;
+            if (activeSectors < 2 || total === 0) continue;
+            const spanX = Math.max(0, maxX - minX);
+            const spanY = Math.max(0, maxY - minY);
+            const spanFactor = Math.min(1, spanX / (outerRadius * 0.9), spanY / (outerRadius * 0.9));
+            const densityFactor = Math.min(1, total / (minSectorPixels * 8));
+            const centerClearFactor = Math.max(0, 1 - centerPixels / Math.max(1, total * 0.35));
+            const score = Math.min(1,
+                activeSectors / 4 * 0.45
+                + spanFactor * 0.30
+                + densityFactor * 0.15
+                + centerClearFactor * 0.10);
+            if (score > best.score) {
+                best = {
+                    engaged: activeSectors >= 3 && spanFactor >= 0.65 && score >= 0.72,
+                    score,
+                    centerX: cx,
+                    centerY: cy,
+                };
+            }
+        }
+    }
+    return best;
 }
 
 function luminance(frame: PixelFrame, x: number, y: number): number {

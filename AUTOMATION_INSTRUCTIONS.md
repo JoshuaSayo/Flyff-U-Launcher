@@ -69,7 +69,9 @@ Player HP calibration is required before Combat FSM mode can start.
 
 Select a monster manually so its HP bar appears. Refresh the frame, click **Target HP region**, and drag over only the colored interior of that target HP bar.
 
-This region improves target-health telemetry. Keep it away from names, numbers, and the bar border.
+This region is required for Combat FSM mode. It confirms that the first monster click actually selected a target. Keep it away from names, numbers, and the bar border.
+
+Flyff shows a white crosshair after selection and a red crosshair after combat engages. You do not calibrate either crosshair: the workbench detects the red marker structurally near the clicked monster.
 
 ### Target scan area
 
@@ -203,7 +205,8 @@ Do not open DevTools or activate controller **Forward Hold** on the paired Suppo
 | Field | Example | Meaning |
 |---|---|---|
 | Mode | Combat FSM | Enables supervised foreground input |
-| Attack rotation | `1, 2, 3` | Keys cycled during attacking |
+| Use skill keys | Off | Optional; click-to-attack works without skills |
+| Skill rotation (optional) | `1, 2, 3` | Keys cycled only after red-crosshair confirmation |
 | Heal key | `4` | Key used below the heal threshold |
 | Pickup key | `Z` | Fallback pickup key |
 | Search/camera key | `RIGHT` | Periodic key used while searching |
@@ -213,31 +216,43 @@ Do not open DevTools or activate controller **Forward Hold** on the paired Suppo
 | Vision tick | `500` | Milliseconds between perception cycles |
 | Action interval | `850` | Minimum delay between repeated actions |
 
-Allowed keys are letters, digits, arrows, `Space`, `Tab`, `Escape`, `Backquote`, and `F1` through `F12`. Attack keys must be separated with commas.
+Allowed keys are letters, digits, arrows, `Space`, `Tab`, `Escape`, `Backquote`, and `F1` through `F12`. Optional skill keys must be separated with commas. Leave **Use skill keys** off for normal click-to-attack.
 
 Click **Save profile** after changing the settings.
 
 ## Start Combat FSM
 
 1. Confirm **Player HP region** is calibrated.
-2. Confirm the target template badge says **ready**.
-3. Select **Combat FSM**.
-4. Check all configured keys and thresholds.
-5. Click **Save profile**.
-6. Check: **I am supervising the selected foreground client and accept the game-account risk.**
-7. Click **Start**.
+2. Click a monster manually so its target HP bar appears.
+3. Refresh the frame and calibrate **Selected monster HP** over only the colored HP fill.
+4. Confirm the target-label template badge says **ready**.
+5. Select **Combat FSM**.
+6. Leave **Use skill keys** off unless you explicitly want a skill rotation.
+7. Click **Save profile**.
+8. Check: **I am supervising the selected foreground client and accept the game-account risk.**
+9. Click **Start**.
 
 The acknowledged Start action restores and focuses the selected game session before arming input. If the client cannot receive foreground focus, the app refuses to arm.
 
 Keep supervising the game. Opening another application or moving focus away from the selected client pauses automation.
+
+The target gate is deliberate:
+
+1. The scan finds the saved monster label.
+2. The app clicks the monster to select it.
+3. The selected-monster HP region must become valid.
+4. If necessary, the app clicks the same monster again to engage it.
+5. `ATTACKING` begins only after a red crosshair is detected near that monster.
+
+A white crosshair or a visible monster label alone is not accepted as combat. Selection/engagement retries are limited to three clicks and the approach timeout still applies.
 
 ## Understand the status
 
 | Status | What the app is doing |
 |---|---|
 | `SEARCHING` | Looking for the target template and periodically using the search key |
-| `APPROACHING` | Clicking the center of the matched target |
-| `ATTACKING` | Cycling the configured attack keys |
+| `APPROACHING` | Clicking the matched monster, waiting for selected HP, then waiting for a red crosshair |
+| `ATTACKING` | Continuing click-to-attack; optional skill keys run only when enabled |
 | `HEALING` | Using the heal key until HP reaches the safe threshold |
 | `LOOTING` | Clicking matched loot or using the pickup key |
 | `SUPPORTING` | Running the bounded Support priority scheduler; inspect Main/Support HP, MP, burst, resurrection attempts, and last action |
@@ -278,9 +293,17 @@ Read the error toast and verify:
 - the selected profile is currently open;
 - **Combat FSM** is saved;
 - the Player HP region exists;
+- the Selected monster HP region exists and covers only the colored target-HP fill;
 - the target template badge says **ready**;
 - the supervision checkbox is checked;
 - the selected game client can be restored and focused.
+
+Watch the live **Selected** and **Crosshair** values:
+
+- **Selected: no** after a click means the selected-monster HP calibration is wrong or the click missed.
+- **Selected: yes / Crosshair: no** means Flyff selected the monster but did not engage combat. The app retries the same point up to its bounded limit.
+- **Crosshair: RED** is the only condition that opens the attacking state.
+- If you enabled skill keys, confirm the rotation contains valid keys. Skills are not required when the toggle is off.
 
 If the state immediately changes to **PAUSED** with “Death screen detected” while the character is alive, verify that you are running `4.0.2-automation.2` or newer. Refresh the frame, confirm it shows the game, then recapture a small death-dialog detail only when that dialog is actually visible.
 

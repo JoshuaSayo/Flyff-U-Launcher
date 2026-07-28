@@ -13,7 +13,17 @@ import type {
     AutomationTemplateKind,
     TemplateCaptureRequest,
 } from "../../shared/automation";
-import { decodePng, detectBarFill, extractNormalizedRect, matchTemplate, structuralEdgeDensity, type PixelFrame, type TemplateMatch } from "./frameAnalyzer";
+import {
+    decodePng,
+    detectBarFill,
+    detectRedCrosshair,
+    extractNormalizedRect,
+    matchTemplate,
+    structuralEdgeDensity,
+    type PixelFrame,
+    type RedCrosshairDetection,
+    type TemplateMatch,
+} from "./frameAnalyzer";
 import { decideAutomationState } from "./fsm";
 import { AutomationInputFacade } from "./inputFacade";
 import { AutomationStore } from "./store";
@@ -42,6 +52,9 @@ const TEMPLATE_LIMITS: Record<AutomationTemplateKind, { width: number; height: n
 const EMPTY_METRICS: AutomationMetrics = {
     playerHp: null,
     targetHp: null,
+    targetSelected: false,
+    targetEngaged: false,
+    targetCrosshairScore: 0,
     targetScore: null,
     lootScore: null,
     mainPartyHp: null,
@@ -81,6 +94,9 @@ export class AutomationService {
     private lastSearchAt = 0;
     private attackIndex = 0;
     private lostTargetFrames = 0;
+    private lostEngagementFrames = 0;
+    private activeTargetPoint: { x: number; y: number } | null = null;
+    private targetClickAttempts = 0;
     private generation = 0;
     private templateCache = new Map<string, PixelFrame>();
     private captureSourceLogged = new Set<string>();
@@ -161,7 +177,11 @@ export class AutomationService {
         const supportEnabled = usesSupport(config);
         if (combatEnabled) {
             if (!config.playerHpRoi) throw new Error("Calibrate the player HP region before arming combat mode");
+            if (!config.targetHpRoi) throw new Error("Calibrate the selected target HP region before arming combat mode");
             if (!templates.target) throw new Error("Capture a target template before arming combat mode");
+            if (config.useAttackSkills && config.attackKeys.length === 0) {
+                throw new Error("Add at least one attack key or disable optional skill rotation");
+            }
         }
         let supportTarget: AutomationTarget | null = null;
         if (supportEnabled) {
@@ -196,6 +216,9 @@ export class AutomationService {
         this.config = config;
         this.generation++;
         this.lostTargetFrames = 0;
+        this.lostEngagementFrames = 0;
+        this.activeTargetPoint = null;
+        this.targetClickAttempts = 0;
         this.attackIndex = 0;
         this.lastActionAt = 0;
         this.lastSearchAt = 0;
@@ -270,6 +293,10 @@ export class AutomationService {
         this.supportLowHpSamples = 0;
         this.supportResurrectionAttempts = 0;
         this.supportDeathActive = false;
+        this.lostTargetFrames = 0;
+        this.lostEngagementFrames = 0;
+        this.activeTargetPoint = null;
+        this.targetClickAttempts = 0;
         this.statusValue.profileId = null;
         this.statusValue.armed = false;
         this.statusValue.metrics = { ...EMPTY_METRICS };
@@ -351,6 +378,7 @@ export class AutomationService {
         target: TemplateMatch | null;
         loot: TemplateMatch | null;
         death: TemplateMatch | null;
+        crosshair: RedCrosshairDetection;
     }> {
         const [targetTemplate, lootTemplate, deathTemplate] = await Promise.all([
             this.loadTemplate(profileId, "target"),
@@ -363,6 +391,7 @@ export class AutomationService {
             target: targetTemplate ? matchTemplate(frame, targetTemplate, config.targetScanRoi) : null,
             loot: lootTemplate ? matchTemplate(frame, lootTemplate, config.targetScanRoi) : null,
             death: deathTemplate ? matchTemplate(frame, deathTemplate, { x: 0, y: 0, width: 1, height: 1 }) : null,
+            crosshair: detectRedCrosshair(frame, config.targetScanRoi, this.activeTargetPoint),
         };
     }
 
@@ -399,11 +428,25 @@ export class AutomationService {
             const targetVisible = (result.target?.score ?? 0) >= threshold;
             const lootVisible = (result.loot?.score ?? 0) >= threshold;
             const deathVisible = (result.death?.score ?? 0) >= threshold;
+            const targetSelected = result.targetHp !== null;
+            const targetEngaged = targetSelected && result.crosshair.engaged;
+            if (targetEngaged && result.crosshair.centerX !== null && result.crosshair.centerY !== null) {
+                this.activeTargetPoint = {
+                    x: result.crosshair.centerX,
+                    y: result.crosshair.centerY,
+                };
+            }
             const analyzeMs = performance.now() - analyzeStarted;
             if (this.statusValue.state === "attacking") {
-                this.lostTargetFrames = targetVisible ? 0 : this.lostTargetFrames + 1;
+                this.lostTargetFrames = targetSelected ? 0 : this.lostTargetFrames + 1;
+                this.lostEngagementFrames = targetEngaged
+                    ? 0
+                    : targetSelected
+                        ? this.lostEngagementFrames + 1
+                        : 0;
             } else {
                 this.lostTargetFrames = 0;
+                this.lostEngagementFrames = 0;
             }
 
             if (deathVisible && !(supportProfileId && config.supportResurrectionEnabled)) {
@@ -429,6 +472,9 @@ export class AutomationService {
             this.statusValue.metrics = {
                 playerHp: result.playerHp,
                 targetHp: result.targetHp,
+                targetSelected,
+                targetEngaged,
+                targetCrosshairScore: result.crosshair.score,
                 targetScore: result.target?.score ?? null,
                 lootScore: result.loot?.score ?? null,
                 mainPartyHp,
@@ -451,6 +497,8 @@ export class AutomationService {
                 mode: config.mode,
                 playerHp: result.playerHp,
                 targetVisible,
+                targetSelected,
+                targetEngaged,
                 lootVisible,
                 deathVisible: deathVisible && !(supportProfileId && config.supportResurrectionEnabled),
                 elapsedInStateMs: Date.now() - this.stateEnteredAt,
@@ -459,12 +507,13 @@ export class AutomationService {
                 approachTimeoutMs: config.approachTimeoutMs,
                 lootTimeoutMs: config.lootTimeoutMs,
                 lostTargetFrames: this.lostTargetFrames,
+                lostEngagementFrames: this.lostEngagementFrames,
             });
             if (next !== current) {
                 this.setState(next, this.transitionReason(current, next));
-                await this.onStateEntered(next, result.target, result.loot);
+                await this.onStateEntered(next, current, result.target, result.loot);
             } else {
-                await this.performStateAction(next, result.loot);
+                await this.performStateAction(next, result.target, result.loot, targetSelected, targetEngaged);
             }
             this.emit();
             if (generation === this.generation && !["paused", "stopped", "faulted"].includes(this.statusValue.state)) {
@@ -647,23 +696,68 @@ export class AutomationService {
         await follow(false);
     }
 
-    private async onStateEntered(state: AutomationState, target: TemplateMatch | null, loot: TemplateMatch | null): Promise<void> {
+    private async clickActiveTarget(target: TemplateMatch | null, replacePoint: boolean): Promise<boolean> {
+        if (!this.statusValue.profileId) return false;
+        if ((replacePoint || !this.activeTargetPoint) && target) {
+            this.activeTargetPoint = {
+                x: target.x + target.width / 2,
+                y: target.y + target.height / 2,
+            };
+        }
+        if (!this.activeTargetPoint) return false;
+        await this.input.click(
+            this.statusValue.profileId,
+            this.activeTargetPoint.x,
+            this.activeTargetPoint.y,
+        );
+        this.targetClickAttempts++;
+        this.recordAction();
+        return true;
+    }
+
+    private async onStateEntered(
+        state: AutomationState,
+        from: AutomationState,
+        target: TemplateMatch | null,
+        loot: TemplateMatch | null,
+    ): Promise<void> {
         if (!this.config || !this.statusValue.profileId) return;
-        if (state === "approaching" && target) {
-            await this.input.click(this.statusValue.profileId, target.x + target.width / 2, target.y + target.height / 2);
-            this.recordAction();
+        if (state === "approaching") {
+            this.targetClickAttempts = 0;
+            await this.clickActiveTarget(target, from === "searching" || !this.activeTargetPoint);
         } else if (state === "healing") {
             await this.input.pressKey(this.statusValue.profileId, this.config.healKey);
             this.recordAction();
         } else if (state === "looting") {
+            this.activeTargetPoint = null;
+            this.targetClickAttempts = 0;
             await this.performLoot(loot);
+        } else if (state === "searching") {
+            this.activeTargetPoint = null;
+            this.targetClickAttempts = 0;
         }
     }
 
-    private async performStateAction(state: AutomationState, loot: TemplateMatch | null): Promise<void> {
+    private async performStateAction(
+        state: AutomationState,
+        target: TemplateMatch | null,
+        loot: TemplateMatch | null,
+        targetSelected: boolean,
+        targetEngaged: boolean,
+    ): Promise<void> {
         if (!this.config || !this.statusValue.profileId) return;
         const now = Date.now();
-        if (state === "attacking" && now - this.lastActionAt >= this.config.actionIntervalMs) {
+        const selectionClickInterval = Math.max(300, Math.min(600, Math.round(this.config.actionIntervalMs / 2)));
+        if (state === "approaching") {
+            if (!targetEngaged
+                && this.targetClickAttempts < 3
+                && now - this.lastActionAt >= selectionClickInterval) {
+                await this.clickActiveTarget(target, !targetSelected);
+            }
+        } else if (state === "attacking"
+            && this.config.useAttackSkills
+            && this.config.attackKeys.length > 0
+            && now - this.lastActionAt >= this.config.actionIntervalMs) {
             const key = this.config.attackKeys[this.attackIndex % this.config.attackKeys.length]!;
             this.attackIndex++;
             await this.input.pressKey(this.statusValue.profileId, key);
@@ -708,11 +802,23 @@ export class AutomationService {
     }
 
     private transitionReason(from: AutomationState, to: AutomationState): string {
-        if (to === "approaching") return "Target template matched";
-        if (to === "attacking") return from === "healing" ? "HP recovered" : "Approach complete";
+        if (to === "approaching") {
+            return from === "attacking"
+                ? "Red crosshair was lost; re-engaging the selected target"
+                : from === "healing"
+                    ? "HP recovered; re-engaging the selected target"
+                    : "Monster label matched; clicking to select and engage";
+        }
+        if (to === "attacking") return from === "healing" ? "HP recovered with red crosshair active" : "Red combat crosshair confirmed";
         if (to === "healing") return "Player HP is below the configured threshold";
-        if (to === "looting") return "Target was lost for three consecutive frames";
-        if (to === "searching") return from === "looting" ? "Loot sweep complete" : "Approach timed out";
+        if (to === "looting") return "Selected target HP and red crosshair were lost for three consecutive frames";
+        if (to === "searching") {
+            return from === "looting"
+                ? "Loot sweep complete"
+                : from === "healing"
+                    ? "HP recovered but no target remains selected"
+                    : "Target selection or red-crosshair confirmation timed out";
+        }
         return `${from} -> ${to}`;
     }
 

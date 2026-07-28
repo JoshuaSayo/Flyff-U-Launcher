@@ -6,7 +6,10 @@ const readySupport: SetupReadinessInput = {
     mainProfileId: "main",
     supportProfileId: "support",
     hasPlayerHp: false,
+    hasTargetHp: false,
     hasTargetTemplate: false,
+    useAttackSkills: false,
+    hasAttackKeys: false,
     hasMainPartyHp: true,
     hasMainPartyRow: true,
     hasSupportHealKey: true,
@@ -54,7 +57,20 @@ describe("automationSetupChecklist", () => {
         });
         expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual([
             "main_hp",
+            "target_hp",
             "target_template",
         ]);
+    });
+
+    it("requires attack keys only when optional skill rotation is enabled", () => {
+        const checks = automationSetupChecklist({
+            ...readySupport,
+            mode: "combat",
+            hasPlayerHp: true,
+            hasTargetHp: true,
+            hasTargetTemplate: true,
+            useAttackSkills: true,
+        });
+        expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual(["attack_keys"]);
     });
 });

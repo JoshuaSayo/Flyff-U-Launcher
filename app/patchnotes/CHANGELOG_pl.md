@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.5
+
+### Wybór potwora przez kliknięcie
+
+- Walka klika wykrytego potwora, sprawdza pasek HP wybranego celu i czeka na strukturalnie wykryty czerwony celownik przed atakiem.
+- Biały celownik wyboru, czerwone paski HP i czerwony tekst nie potwierdzają walki.
+- Rotacja umiejętności jest opcjonalna i domyślnie wyłączona; zwykły atak kliknięciem działa bez klawiszy umiejętności.
+- Wybór i rozpoczęcie walki są ograniczone do trzech kliknięć i limitu czasu podejścia.
+
+Instrukcja kalibracji: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Wersja 4.0.2-automation.4
 
 ### Prowadzona konfiguracja Smart Support

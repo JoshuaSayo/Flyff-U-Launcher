@@ -2,7 +2,7 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
-export const AUTOMATION_CONFIG_VERSION = 4 as const;
+export const AUTOMATION_CONFIG_VERSION = 5 as const;
 
 export type AutomationMode = "observer" | "combat" | "support" | "combat_support";
 
@@ -41,6 +41,7 @@ export type AutomationConfig = {
     healThreshold: number;
     safeHpThreshold: number;
     templateThreshold: number;
+    useAttackSkills: boolean;
     attackKeys: string[];
     healKey: string;
     pickupKey: string;
@@ -87,6 +88,9 @@ export type AutomationTemplateState = Record<AutomationTemplateKind, boolean>;
 export type AutomationMetrics = {
     playerHp: number | null;
     targetHp: number | null;
+    targetSelected: boolean;
+    targetEngaged: boolean;
+    targetCrosshairScore: number;
     targetScore: number | null;
     lootScore: number | null;
     mainPartyHp: number | null;
@@ -128,6 +132,7 @@ export function defaultAutomationConfig(profileId: string): AutomationConfig {
         healThreshold: 0.40,
         safeHpThreshold: 0.75,
         templateThreshold: 0.82,
+        useAttackSkills: false,
         attackKeys: ["1", "2", "3"],
         healKey: "4",
         pickupKey: "Z",
@@ -246,7 +251,8 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
         healThreshold: finiteNumber(input.healThreshold, defaults.healThreshold, 0.05, 0.95),
         safeHpThreshold: finiteNumber(input.safeHpThreshold, defaults.safeHpThreshold, 0.10, 1),
         templateThreshold: finiteNumber(input.templateThreshold, defaults.templateThreshold, 0.45, 0.99),
-        attackKeys: keys.length > 0 ? keys : defaults.attackKeys,
+        useAttackSkills: input.useAttackSkills === true,
+        attackKeys: Array.isArray(input.attackKeys) ? keys : defaults.attackKeys,
         healKey: normalizeKey(input.healKey, defaults.healKey),
         pickupKey: normalizeKey(input.pickupKey, defaults.pickupKey),
         searchKey: normalizeKey(input.searchKey, defaults.searchKey),

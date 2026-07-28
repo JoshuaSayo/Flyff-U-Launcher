@@ -2,6 +2,28 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.5] - 2026-07-28
+
+### Added
+
+- Automatic saturated-red crosshair confirmation using HSV segmentation plus three-direction radial structure near the clicked monster.
+- Selected-target telemetry for target HP, selection state, red-crosshair state, and crosshair confidence.
+- A bounded click sequence that selects the matched monster, waits for its target HP bar, clicks again to engage, and retries at most three times.
+- Guided combat setup now requires the selected monster HP region and explains the four visual targeting steps.
+
+### Changed
+
+- The combat FSM no longer assumes one monster-label click means the target is engaged.
+- `ATTACKING` begins only after the selected monster HP exists and the red combat crosshair is visually confirmed.
+- Skill rotation is optional, disabled by default, and can run only after red-crosshair confirmation.
+- Click-to-attack works with an empty skill rotation.
+- Configuration schema is now version 5; existing calibration and keys are preserved while optional skill rotation migrates to disabled.
+
+### Safety
+
+- Red bars, white selection markers, and red text do not qualify by color alone; crosshair confirmation also requires a multi-direction radial structure near the stored click point.
+- Target selection attempts are bounded and time out to searching instead of clicking indefinitely.
+
 ## [4.0.2-automation.4] - 2026-07-28
 
 ### Added

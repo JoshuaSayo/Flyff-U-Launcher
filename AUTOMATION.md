@@ -44,7 +44,7 @@ Only the dedicated workbench can save automation configuration, capture template
 Choose a calibration action and drag a tight rectangle on the current preview:
 
 - **Player HP region**: the colored fill area of the player's HP bar;
-- **Target HP region**: the colored fill area of the active target's HP bar;
+- **Target HP region**: the colored fill area of the active monster's HP bar after clicking it;
 - **Target scan area**: the gameplay region where target and loot templates should be searched;
 - **Main party HP (Support view)**: the colored fill inside the Main character's party HP bar as seen by Support;
 - **Main party row (Support view)**: the Main character's name row that Support clicks before casting;
@@ -56,6 +56,8 @@ Choose a calibration action and drag a tight rectangle on the current preview:
 
 Template matching is brightness-normalized and structural. Tight selections with distinctive edges work better than large areas, animated effects, or single flat colors. Capture templates at the same UI scale used during operation.
 
+The red combat crosshair does not require a separate template. After the monster-label click reveals target HP, the analyzer searches near that stored click point for saturated red pixels arranged in Flyff's multi-direction radial crosshair structure. A red bar, red text, or the white selection crosshair is insufficient.
+
 Version `4.0.2-automation.2` migrates the vision configuration to schema version 2. The first load preserves behavior, keys, and timing but clears version 1 HP regions and target/loot/death templates because those pixels may have come from the parent renderer. Confirm that the preview visibly shows Flyff, then recalibrate once. Oversized HP regions and oversized or low-detail templates are rejected.
 
 Click **Save profile** after changing regions, templates, keys, or thresholds. Calibration cannot be changed while the selected profile is armed; pause or stop first.
@@ -65,7 +67,8 @@ Click **Save profile** after changing regions, templates, keys, or thresholds. C
 | Setting | Purpose | Default |
 |---|---|---:|
 | Mode | `Observer only` analyzes frames without input; `Combat FSM` may emit foreground input | Observer only |
-| Attack rotation | Comma-separated keys cycled while attacking | 1, 2, 3 |
+| Use skill rotation | Opt-in skill keys after the red crosshair is confirmed | Disabled |
+| Skill rotation | Optional comma-separated keys cycled while engaged | 1, 2, 3 |
 | Heal key | Key used below the heal threshold | 4 |
 | Pickup key | Fallback key when no loot template is visible | Z |
 | Search/camera key | Periodic key used while searching | Right |
@@ -95,11 +98,22 @@ Start with **Observer only** and confirm that the HP values and template scores 
 
 To use **Combat FSM**:
 
-1. Capture at least a target template and complete the important HP/scan regions.
-2. Select **Combat FSM** and save the profile.
-3. Focus the selected game client.
-4. Check the supervision acknowledgement.
-5. Click **Start** and continue watching both the client and status panel.
+1. Calibrate Main player HP and the selected monster HP bar.
+2. Capture a small monster-name label and confirm the scan area covers the play field.
+3. Leave **Use skill rotation** off for normal click-to-attack, or enable it and enter skill keys.
+4. Select **Combat FSM** and save the profile.
+5. Focus the selected game client, acknowledge supervision, and click **Start**.
+6. Confirm telemetry changes from **Selected yes** to **Crosshair RED** before the state becomes **ATTACKING**.
+
+The targeting sequence is deliberately gated:
+
+1. Match a monster label.
+2. Click the stored monster position to select it.
+3. Wait for the calibrated target HP bar to appear.
+4. Click again to engage normal attack.
+5. Enter **ATTACKING** only after the red crosshair is structurally confirmed.
+
+Selection clicks are limited to three per approach attempt. Failure to obtain the target HP bar or red crosshair returns the FSM to searching after the approach timeout.
 
 Combat mode pauses when the client loses focus. It also pauses when the workbench closes, a death template matches, or a state exceeds its safety timeout. After correcting the cause, refocus the game client, acknowledge supervision again, and click **Resume**.
 
@@ -134,8 +148,8 @@ Use **Emergency stop** for a normal immediate stop, or press the global shortcut
 |---|---|---|
 | Observing | Captures and analyzes without input | User pauses or stops |
 | Searching | Looks for the target template and periodically sends the search key | Target match |
-| Approaching | Clicks the center of the matched target | Target remains visible, or approach timeout |
-| Attacking | Cycles configured attack keys | Target absent for three frames, or low player HP |
+| Approaching | Selects the monster, waits for target HP, then clicks to engage | Red crosshair confirmation, or approach timeout |
+| Attacking | Maintains click-to-attack and optionally cycles skill keys | Selected HP disappears for three frames, red crosshair is lost, or player HP is low |
 | Healing | Repeats the heal key at the action interval | Player HP reaches the safe threshold |
 | Looting | Clicks matched loot or uses the fallback pickup key | Loot timeout with no visible loot |
 | Supporting | Runs the bounded Support priority scheduler and reports Main/Support HP, MP, burst, and resurrection telemetry | User pauses or stops |
@@ -178,6 +192,15 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Keep the template inside the target scan area.
 - Start with the default threshold, then reduce it in small steps while observing false matches.
 - Re-capture after a UI-scale or resolution change.
+
+### Monster is selected but combat does not begin
+
+- Confirm **Target HP** changes from `—` after the first click.
+- Recalibrate **Selected monster HP** over only the red fill shown at the top after selecting a monster.
+- Confirm the world scan area includes the monster and its crosshair but excludes chat and fixed red UI.
+- Watch **Crosshair** telemetry. It must report `RED`; the white selection crosshair intentionally does not qualify.
+- Keep skill rotation disabled while testing. The second click should start Flyff's normal attack without pressing a skill.
+- If the marker turns red in-game but telemetry does not, preserve the same resolution/HUD scale and attach a screenshot plus launcher log to an issue.
 
 ### The session pauses immediately
 

@@ -1,6 +1,18 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.5
+
+### Ciblage des monstres par clic
+
+- Le combat clique le monstre détecté, vérifie ses PV sélectionnés, puis attend un réticule rouge détecté structurellement avant d'attaquer.
+- Le réticule blanc, les barres de PV rouges et le texte rouge ne confirment pas l'engagement.
+- La rotation de compétences est facultative et désactivée par défaut ; l'attaque normale par clic fonctionne sans touche de compétence.
+- La sélection et l'engagement sont limités à trois clics et au délai d'approche.
+
+Consultez [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) pour l'étalonnage guidé.
+
+---
 ## Version 4.0.2-automation.4
 
 ### Configuration guidée de Smart Support

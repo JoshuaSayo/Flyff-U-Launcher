@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.5
+
+### Click-first monster targeting
+
+- Combat now clicks a matched monster, verifies selected-monster HP, and waits for a structurally detected red crosshair before attacking.
+- White selection crosshairs, red HP bars, and red text are not accepted as combat engagement.
+- Skill rotation is optional and disabled by default; normal click-to-attack works with no skill keys.
+- Selection and engagement are limited to three click attempts and the approach timeout.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for the guided calibration steps.
+
+---
 ## Version 4.0.2-automation.4
 
 ### Guided Smart Support setup

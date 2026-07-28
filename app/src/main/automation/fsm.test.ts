@@ -5,6 +5,8 @@ const base: FsmObservation = {
     mode: "combat",
     playerHp: 0.9,
     targetVisible: false,
+    targetSelected: false,
+    targetEngaged: false,
     lootVisible: false,
     deathVisible: false,
     elapsedInStateMs: 100,
@@ -13,6 +15,7 @@ const base: FsmObservation = {
     approachTimeoutMs: 5000,
     lootTimeoutMs: 3500,
     lostTargetFrames: 0,
+    lostEngagementFrames: 0,
 };
 
 describe("automation FSM", () => {
@@ -20,12 +23,39 @@ describe("automation FSM", () => {
         expect(decideAutomationState("searching", { ...base, targetVisible: true })).toBe("approaching");
     });
 
+    it("waits for a red crosshair after the first click reveals target HP", () => {
+        expect(decideAutomationState("approaching", {
+            ...base,
+            targetVisible: true,
+            targetSelected: true,
+        })).toBe("approaching");
+        expect(decideAutomationState("approaching", {
+            ...base,
+            targetVisible: true,
+            targetSelected: true,
+            targetEngaged: true,
+        })).toBe("attacking");
+    });
+
+    it("re-engages a selected monster when the red crosshair is lost", () => {
+        expect(decideAutomationState("attacking", {
+            ...base,
+            targetSelected: true,
+            lostEngagementFrames: 2,
+        })).toBe("approaching");
+    });
+
     it("prioritizes healing when player HP is unsafe", () => {
         expect(decideAutomationState("attacking", { ...base, playerHp: 0.2, targetVisible: true })).toBe("healing");
     });
 
     it("moves to loot only after consecutive target loss", () => {
-        expect(decideAutomationState("attacking", { ...base, lostTargetFrames: 2 })).toBe("attacking");
+        expect(decideAutomationState("attacking", {
+            ...base,
+            targetSelected: true,
+            targetEngaged: true,
+            lostTargetFrames: 2,
+        })).toBe("attacking");
         expect(decideAutomationState("attacking", { ...base, lostTargetFrames: 3 })).toBe("looting");
     });
 

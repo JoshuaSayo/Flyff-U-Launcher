@@ -7,7 +7,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-4.0.2--automation.4-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.5-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-Juli_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -35,6 +35,8 @@ Dieser GPL-3.0-Fork basiert auf [GH-Praxa/Flyff-U-Launcher](https://github.com/G
 - Liest ausschließlich lokal aufgenommene Bildpunkte aus dem Electron-Compositor; kein Speicherzugriff, keine Pakete, keine DOM-Inspektion und keine Client-Modifikation
 - Startet sicher im Modus **Nur beobachten**; der Combat-FSM muss pro Profil ausdrücklich gewählt und bestätigt werden
 - Kalibriert Spieler-HP, Ziel-HP und Suchbereich direkt auf einer aktuellen Vorschau
+- Klickt zuerst das Monster an, wartet auf dessen Ziel-HP und startet den Angriff erst nach Erkennung des roten Fadenkreuzes
+- Angriffsfertigkeiten sind optional und standardmäßig deaktiviert; normales Klick-Angreifen funktioniert ohne Skill-Liste
 - Verwendet lokale Struktur-Templates für Ziel, Beute und Tod; offizielle API- und Plugin-Daten sind technisch vom Automatisierungspfad getrennt
 - Pausiert bei Fokusverlust, geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
 - Paart ein Main-Profil mit einem Support-/Ringmaster-Profil für priorisiertes Heilen, Main-/Selbst-Buffs und Auto-Follow
@@ -291,7 +293,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-4.0.2--automation.4-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.5-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-July_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -315,6 +317,8 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Reads pixels directly from the selected embedded game surface on Windows; no memory access, packets, DOM inspection, or client modification
 - Starts safely in **Observer only** mode; the combat FSM must be selected and acknowledged per profile
 - Calibrates player HP, target HP, and the target scan area on a current frame preview
+- Clicks the monster first, waits for its selected target HP, and attacks only after the red combat crosshair is detected
+- Attack skills are optional and disabled by default; normal click-to-attack works with no skill list
 - Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
 - Pauses on focus loss, workbench close, detected death, and every state timeout
 - Pairs an explicit Main profile with a Support/Ringmaster profile for prioritized healing, Main/self buffs, and auto-follow
@@ -325,7 +329,7 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 
 For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
 
-Version `4.0.2-automation.4` adds a guided Support setup and a strict priority scheduler. Start with the preset and two required party calibrations; enable self-care or resurrection only after basic healing is verified.
+Version `4.0.2-automation.5` adds click-first monster selection and red-crosshair engagement confirmation. Skill rotation is optional; leave it disabled to use Flyff's normal click-to-attack behavior.
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles

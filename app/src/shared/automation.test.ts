@@ -73,4 +73,23 @@ describe("normalizeAutomationConfig", () => {
         });
         expect(config.supportProfileId).toBeNull();
     });
+
+    it("keeps click-to-attack enabled when optional skill rotation is empty", () => {
+        const config = normalizeAutomationConfig("main", {
+            mode: "combat",
+            useAttackSkills: false,
+            attackKeys: [],
+        });
+        expect(config.useAttackSkills).toBe(false);
+        expect(config.attackKeys).toEqual([]);
+    });
+
+    it("normalizes optional attack skill keys only when explicitly enabled", () => {
+        const config = normalizeAutomationConfig("main", {
+            useAttackSkills: true,
+            attackKeys: ["1", "bad key", "F2"],
+        });
+        expect(config.useAttackSkills).toBe(true);
+        expect(config.attackKeys).toEqual(["1", "F2"]);
+    });
 });

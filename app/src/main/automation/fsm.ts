@@ -6,6 +6,8 @@ export type FsmObservation = {
     mode: AutomationMode;
     playerHp: number | null;
     targetVisible: boolean;
+    targetSelected: boolean;
+    targetEngaged: boolean;
     lootVisible: boolean;
     deathVisible: boolean;
     elapsedInStateMs: number;
@@ -14,6 +16,7 @@ export type FsmObservation = {
     approachTimeoutMs: number;
     lootTimeoutMs: number;
     lostTargetFrames: number;
+    lostEngagementFrames: number;
 };
 
 export function decideAutomationState(current: AutomationState, observation: FsmObservation): AutomationState {
@@ -31,11 +34,16 @@ export function decideAutomationState(current: AutomationState, observation: Fsm
             return observation.targetVisible ? "approaching" : "searching";
         case "approaching":
             if (observation.elapsedInStateMs >= observation.approachTimeoutMs) return "searching";
-            return observation.targetVisible ? "attacking" : "approaching";
+            return observation.targetEngaged ? "attacking" : "approaching";
         case "attacking":
-            return observation.lostTargetFrames >= 3 ? "looting" : "attacking";
+            if (observation.lostTargetFrames >= 3) return "looting";
+            return observation.targetSelected && observation.lostEngagementFrames >= 2
+                ? "approaching"
+                : "attacking";
         case "healing":
-            return observation.playerHp !== null && observation.playerHp >= observation.safeHpThreshold ? "attacking" : "healing";
+            if (observation.playerHp === null || observation.playerHp < observation.safeHpThreshold) return "healing";
+            if (observation.targetEngaged) return "attacking";
+            return observation.targetSelected ? "approaching" : "searching";
         case "looting":
             return observation.elapsedInStateMs >= observation.lootTimeoutMs && !observation.lootVisible ? "searching" : "looting";
         case "supporting":

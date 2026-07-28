@@ -5,7 +5,10 @@ export type SetupReadinessInput = {
     mainProfileId: string;
     supportProfileId: string | null;
     hasPlayerHp: boolean;
+    hasTargetHp: boolean;
     hasTargetTemplate: boolean;
+    useAttackSkills: boolean;
+    hasAttackKeys: boolean;
     hasMainPartyHp: boolean;
     hasMainPartyRow: boolean;
     hasSupportHealKey: boolean;
@@ -36,8 +39,16 @@ export function automationSetupChecklist(input: SetupReadinessInput): SetupCheck
     if (combatMode) {
         checks.push(
             { id: "main_hp", label: "Main player HP calibrated", ready: input.hasPlayerHp },
+            { id: "target_hp", label: "Selected monster HP calibrated", ready: input.hasTargetHp },
             { id: "target_template", label: "Target template captured", ready: input.hasTargetTemplate },
         );
+        if (input.useAttackSkills) {
+            checks.push({
+                id: "attack_keys",
+                label: "Optional skill rotation configured",
+                ready: input.hasAttackKeys,
+            });
+        }
     }
     if (supportMode) {
         checks.push(

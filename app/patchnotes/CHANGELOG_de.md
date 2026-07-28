@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.5
+
+### Monster zuerst per Klick anvisieren
+
+- Der Kampf klickt ein erkanntes Monster an, prüft dessen sichtbare Ziel-HP und wartet vor dem Angriff auf ein strukturell erkanntes rotes Fadenkreuz.
+- Weiße Auswahlmarkierungen, rote HP-Balken und roter Text gelten nicht als Kampfbestätigung.
+- Die Skill-Rotation ist optional und standardmäßig ausgeschaltet; normaler Klick-Angriff funktioniert ohne Skill-Tasten.
+- Auswahl und Kampfstart sind auf drei Klickversuche und den Annäherungs-Timeout begrenzt.
+
+Die geführte Kalibrierung steht in [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.4
 
 ### Geführte Smart-Support-Einrichtung

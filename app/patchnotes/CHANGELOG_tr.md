@@ -1,6 +1,18 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.5
+
+### Önce tıklayarak canavar hedefleme
+
+- Savaş, eşleşen canavara tıklar, seçili hedef HP'sini doğrular ve saldırmadan önce yapısal olarak algılanan kırmızı nişangâhı bekler.
+- Beyaz seçim nişangâhı, kırmızı HP çubukları ve kırmızı yazılar savaş onayı sayılmaz.
+- Yetenek döngüsü isteğe bağlıdır ve varsayılan olarak kapalıdır; normal tıklama saldırısı yetenek tuşu olmadan çalışır.
+- Seçim ve savaşa giriş üç tıklama denemesi ve yaklaşma zaman aşımıyla sınırlıdır.
+
+Yönlendirmeli ayarlar için [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) belgesine bakın.
+
+---
 ## Sürüm 4.0.2-automation.4
 
 ### Yönlendirmeli Smart Support kurulumu

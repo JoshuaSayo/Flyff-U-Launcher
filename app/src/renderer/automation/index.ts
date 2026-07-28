@@ -83,7 +83,14 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     );
     const modeRow = el("label", "automationField");
     modeRow.append(el("span", "automationFieldLabel", "Mode"), modeSelect);
-    const attack = textField("Attack rotation");
+    const attack = textField("Skill rotation (optional)");
+    const useAttackSkills = document.createElement("input");
+    useAttackSkills.type = "checkbox";
+    const useAttackSkillsRow = el("label", "automationAcknowledge");
+    useAttackSkillsRow.append(
+        useAttackSkills,
+        el("span", "", "Use skill keys only after the red combat crosshair is confirmed"),
+    );
     const heal = textField("Heal key");
     const pickup = textField("Pickup key");
     const search = textField("Search/camera key");
@@ -97,6 +104,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     mainConfigSummary.textContent = "Main combat and vision settings";
     mainConfigDetails.append(
         mainConfigSummary,
+        el("p", "automationShortcut", "Targeting clicks the monster to reveal its HP, clicks again to engage, then requires the red crosshair. Skills are not required."),
+        useAttackSkillsRow,
         attack.row,
         heal.row,
         pickup.row,
@@ -224,14 +233,14 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     calibrationPanel.append(el("h2", "automationCardTitle", "Vision calibration"));
     const calibrationGrid = el("div", "automationCalibrationGrid");
     const calibrationItems: Array<[CalibrationKind, string]> = [
-        ["playerHpRoi", "Main player HP"],
-        ["targetHpRoi", "Main target HP"],
-        ["targetScanRoi", "Main target scan area"],
+        ["playerHpRoi", "1. Main player HP"],
+        ["targetHpRoi", "2. Selected monster HP"],
+        ["targetScanRoi", "3. Monster scan area"],
         ["mainPartyHpRoi", "1. Main party HP"],
         ["mainPartyTargetRoi", "2. Main party row"],
         ["supportSelfHpRoi", "Support HP (Support view)"],
         ["supportMpRoi", "Support MP (Support view)"],
-        ["target", "Capture target label"],
+        ["target", "4. Capture monster label"],
         ["loot", "Capture loot"],
         ["death", "Capture death dialog"],
     ];
@@ -328,7 +337,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             mainProfileId: profileId(),
             supportProfileId: supportSelect.value || null,
             hasPlayerHp: Boolean(config?.playerHpRoi),
+            hasTargetHp: Boolean(config?.targetHpRoi),
             hasTargetTemplate: templates.target,
+            useAttackSkills: useAttackSkills.checked,
+            hasAttackKeys: attack.input.value.split(",").some((key) => key.trim().length > 0),
             hasMainPartyHp: Boolean(config?.mainPartyHpRoi),
             hasMainPartyRow: Boolean(config?.mainPartyTargetRoi),
             hasSupportHealKey: supportHeal.input.value.trim().length > 0,
@@ -369,6 +381,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     }
 
     function syncGuidedUi(): void {
+        setFieldsDisabled(
+            [attack],
+            !useAttackSkills.checked,
+        );
         setFieldsDisabled(
             [supportSelfHeal, supportSelfHealAt, supportSelfSafeAt, supportSelfInterval],
             !supportSelfEnabled.checked,
@@ -417,6 +433,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             || modeSelect.value === "combat_support"
             ? modeSelect.value
             : "observer";
+        config.useAttackSkills = useAttackSkills.checked;
         config.attackKeys = attack.input.value.split(",").map((key) => key.trim().toUpperCase()).filter(Boolean);
         config.healKey = heal.input.value.trim().toUpperCase();
         config.pickupKey = pickup.input.value.trim().toUpperCase();
@@ -467,6 +484,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     function updateFields(): void {
         if (!config) return;
         modeSelect.value = config.mode;
+        useAttackSkills.checked = config.useAttackSkills;
         attack.input.value = config.attackKeys.join(", ");
         heal.input.value = config.healKey;
         pickup.input.value = config.pickupKey;
@@ -674,6 +692,9 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
         metrics.textContent = [
             `HP ${pct(status.metrics.playerHp)}`,
+            `Target HP ${pct(status.metrics.targetHp)}`,
+            `Selected ${status.metrics.targetSelected ? "yes" : "no"}`,
+            `Crosshair ${status.metrics.targetEngaged ? "RED" : "no"} ${pct(status.metrics.targetCrosshairScore)}`,
             `Main party ${pct(status.metrics.mainPartyHp)}`,
             `Support HP ${pct(status.metrics.supportHp)}`,
             `Support MP ${pct(status.metrics.supportMp)}`,

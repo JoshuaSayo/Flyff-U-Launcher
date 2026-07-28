@@ -91,6 +91,7 @@ describe("AutomationStore", () => {
             expect(config.supportSelfHealEnabled).toBe(false);
             expect(config.supportMpPotionEnabled).toBe(false);
             expect(config.supportResurrectionEnabled).toBe(false);
+            expect(config.useAttackSkills).toBe(false);
         } finally {
             await rm(root, { recursive: true, force: true });
         }

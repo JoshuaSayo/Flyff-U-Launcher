@@ -10,6 +10,7 @@ function combatStore(): AutomationStore {
         ...defaultAutomationConfig("profile-1"),
         mode: "combat" as const,
         playerHpRoi: { x: 0.02, y: 0.02, width: 0.20, height: 0.04 },
+        targetHpRoi: { x: 0.30, y: 0.02, width: 0.20, height: 0.04 },
     };
     return {
         load: vi.fn(async () => config),
@@ -25,6 +26,7 @@ function target(focusSucceeds: boolean): {
     focusContents: ReturnType<typeof vi.fn>;
     capturePage: ReturnType<typeof vi.fn>;
     hostCapturePage: ReturnType<typeof vi.fn>;
+    sendInputEvent: ReturnType<typeof vi.fn>;
     debuggerAttach: ReturnType<typeof vi.fn>;
     debuggerSendCommand: ReturnType<typeof vi.fn>;
 } {
@@ -36,13 +38,14 @@ function target(focusSucceeds: boolean): {
     const focusContents = vi.fn(() => { focused = focusSucceeds; });
     const capturePage = vi.fn();
     const hostCapturePage = vi.fn();
+    const sendInputEvent = vi.fn();
     const debuggerAttach = vi.fn(() => { debuggerAttached = true; });
     const debuggerSendCommand = vi.fn(async () => undefined);
     const webContents = {
         focus: focusContents,
         isFocused: vi.fn(() => focused),
         isDestroyed: vi.fn(() => false),
-        sendInputEvent: vi.fn(),
+        sendInputEvent,
         getType: vi.fn(() => "browserView"),
         capturePage,
         once: vi.fn(),
@@ -69,6 +72,7 @@ function target(focusSucceeds: boolean): {
         focusContents,
         capturePage,
         hostCapturePage,
+        sendInputEvent,
         debuggerAttach,
         debuggerSendCommand,
     };
@@ -145,6 +149,76 @@ describe("AutomationService combat arming", () => {
 
         await expect(service.start("profile-1", true)).rejects.toThrow("could not receive foreground focus");
         expect(service.status().armed).toBe(false);
+        service.stop();
+    });
+
+    it("clicks to select and engage before attacking without optional skill keys", async () => {
+        const selected = target(true);
+        const png = await testFrame(120, 80, []);
+        selected.capturePage.mockResolvedValue(capturedImage(png));
+        const config = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "combat" as const,
+            tickMs: 250,
+            actionIntervalMs: 600,
+            useAttackSkills: false,
+            attackKeys: [] as string[],
+            playerHpRoi: { x: 0.02, y: 0.02, width: 0.20, height: 0.05 },
+            targetHpRoi: { x: 0.30, y: 0.02, width: 0.20, height: 0.05 },
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: true, loot: false, death: false })),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({
+            store,
+            resolveTarget: () => selected.value,
+        });
+        const targetMatch = { score: 1, x: 50, y: 30, width: 20, height: 8 };
+        let frames = 0;
+        const internal = service as unknown as {
+            analyze: (...args: unknown[]) => Promise<{
+                playerHp: number;
+                targetHp: number | null;
+                target: typeof targetMatch;
+                loot: null;
+                death: null;
+                crosshair: {
+                    engaged: boolean;
+                    score: number;
+                    centerX: number | null;
+                    centerY: number | null;
+                };
+            }>;
+        };
+        vi.spyOn(internal, "analyze").mockImplementation(async () => {
+            frames++;
+            const engaged = frames >= 4;
+            return {
+                playerHp: 0.9,
+                targetHp: frames >= 2 ? 1 : null,
+                target: targetMatch,
+                loot: null,
+                death: null,
+                crosshair: {
+                    engaged,
+                    score: engaged ? 0.9 : 0.2,
+                    centerX: engaged ? 60 : null,
+                    centerY: engaged ? 40 : null,
+                },
+            };
+        });
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => {
+            expect(service.status().state).toBe("attacking");
+        }, { timeout: 2500 });
+
+        const events = selected.sendInputEvent.mock.calls.map(([event]) => event as { type?: string });
+        expect(events.filter((event) => event.type === "mouseDown").length).toBeGreaterThanOrEqual(2);
+        expect(events.some((event) => event.type === "keyDown")).toBe(false);
+        expect(service.status().metrics.targetSelected).toBe(true);
+        expect(service.status().metrics.targetEngaged).toBe(true);
         service.stop();
     });
 
@@ -459,6 +533,7 @@ describe("AutomationService combat arming", () => {
                 target: null;
                 loot: null;
                 death: { score: number; x: number; y: number; width: number; height: number };
+                crosshair: { engaged: false; score: 0; centerX: null; centerY: null };
             }>;
         };
         vi.spyOn(internal, "analyze").mockResolvedValue({
@@ -467,6 +542,7 @@ describe("AutomationService combat arming", () => {
             target: null,
             loot: null,
             death: { score: 1, x: 0, y: 0, width: 20, height: 10 },
+            crosshair: { engaged: false, score: 0, centerX: null, centerY: null },
         });
 
         await service.start("profile-1", true);
