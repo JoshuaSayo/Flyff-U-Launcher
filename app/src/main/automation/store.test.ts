@@ -65,4 +65,34 @@ describe("AutomationStore", () => {
             await rm(root, { recursive: true, force: true });
         }
     });
+
+    it("preserves version-3 pairing while adding Support self-care defaults", async () => {
+        const root = await mkdtemp(path.join(tmpdir(), "flyff-automation-store-"));
+        const profileDir = path.join(root, "profile-3");
+        const mainPartyHpRoi = { x: 0.05, y: 0.10, width: 0.35, height: 0.05 };
+        await mkdir(profileDir, { recursive: true });
+        await writeFile(path.join(profileDir, "config.json"), JSON.stringify({
+            version: 3,
+            profileId: "profile-3",
+            mode: "support",
+            supportProfileId: "support-3",
+            mainPartyHpRoi,
+            supportBuffs: [{ key: "F3", intervalSec: 900 }],
+        }), "utf8");
+
+        try {
+            const store = new AutomationStore(root);
+            const config = await store.load("profile-3");
+
+            expect(config.version).toBe(AUTOMATION_CONFIG_VERSION);
+            expect(config.supportProfileId).toBe("support-3");
+            expect(config.mainPartyHpRoi).toEqual(mainPartyHpRoi);
+            expect(config.supportBuffs).toEqual([{ key: "F3", intervalSec: 900, target: "main" }]);
+            expect(config.supportSelfHealEnabled).toBe(false);
+            expect(config.supportMpPotionEnabled).toBe(false);
+            expect(config.supportResurrectionEnabled).toBe(false);
+        } finally {
+            await rm(root, { recursive: true, force: true });
+        }
+    });
 });

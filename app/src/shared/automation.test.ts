@@ -41,19 +41,28 @@ describe("normalizeAutomationConfig", () => {
             mainPartyTargetRoi: { x: 0.1, y: 0.15, width: 0.3, height: 0.05 },
             supportHealThreshold: 0.7,
             supportSafeHpThreshold: 0.2,
+            supportEmergencyHealThreshold: 0.9,
+            supportHpStableSamples: 99,
+            supportSelfHealThreshold: 0.8,
+            supportSelfSafeHpThreshold: 0.2,
+            supportDeselectKey: "BACKQUOTE",
             supportBuffs: [
-                { key: "1", intervalSec: 600 },
-                { key: "1", intervalSec: 30 },
-                { key: "F3", intervalSec: 900 },
+                { key: "1", intervalSec: 600, target: "main" },
+                { key: "1", intervalSec: 30, target: "self" },
+                { key: "F3", intervalSec: 900, target: "self" },
                 { key: "bad key", intervalSec: 1 },
             ],
         });
         expect(config.mode).toBe("combat_support");
         expect(config.supportProfileId).toBe("support");
         expect(config.supportSafeHpThreshold).toBeGreaterThan(config.supportHealThreshold);
+        expect(config.supportEmergencyHealThreshold).toBeLessThan(config.supportHealThreshold);
+        expect(config.supportHpStableSamples).toBe(5);
+        expect(config.supportSelfSafeHpThreshold).toBeGreaterThan(config.supportSelfHealThreshold);
+        expect(config.supportDeselectKey).toBe("BACKQUOTE");
         expect(config.supportBuffs).toEqual([
-            { key: "1", intervalSec: 600 },
-            { key: "F3", intervalSec: 900 },
+            { key: "1", intervalSec: 600, target: "main" },
+            { key: "F3", intervalSec: 900, target: "self" },
         ]);
     });
 

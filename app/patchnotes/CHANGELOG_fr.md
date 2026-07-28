@@ -1,6 +1,18 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.4
+
+### Configuration guidée de Smart Support
+
+- Ajout d'un préréglage de départ, d'une calibration adaptée au mode et d'une liste de contrôle en direct.
+- Ajout des soins Main d'urgence/normaux prioritaires, du soin personnel Support, de la potion MP et de la résurrection vérifiée et limitée.
+- Les buffs ciblent Main ou Support avec `touche:secondes:cible`; les réglages avancés et optionnels sont repliés par défaut.
+- L'API officielle, les plugins, le DOM, la mémoire et les paquets restent isolés de l'automatisation.
+
+Voir [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) pour la configuration la plus courte.
+
+---
 ## Version 4.0.2-automation.3
 
 ### Automatisation Main et Support associée

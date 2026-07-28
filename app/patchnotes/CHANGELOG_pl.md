@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.4
+
+### Prowadzona konfiguracja Smart Support
+
+- Dodano profil startowy, kalibrację zależną od trybu i aktywną listę kontrolną konfiguracji.
+- Dodano priorytetowe awaryjne/zwykłe leczenie Maina oraz opcjonalne samoleczenie Supporta, miksturę MP i ograniczone, weryfikowane wskrzeszanie.
+- Buffy mogą celować w Maina lub Support przez `klawisz:sekundy:cel`; ustawienia zaawansowane i opcjonalne są domyślnie zwinięte.
+- Oficjalne API, pluginy, DOM, pamięć i pakiety nadal są odizolowane od automatyzacji.
+
+Najkrótsza konfiguracja: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Wersja 4.0.2-automation.3
 
 ### Sparowana automatyzacja Main i Support

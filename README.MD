@@ -7,8 +7,8 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-4.0.2--automation.1-green?style=flat-square)
-![Release](https://img.shields.io/badge/Release-März_2026-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.4-green?style=flat-square)
+![Release](https://img.shields.io/badge/Release-Juli_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
@@ -37,7 +37,9 @@ Dieser GPL-3.0-Fork basiert auf [GH-Praxa/Flyff-U-Launcher](https://github.com/G
 - Kalibriert Spieler-HP, Ziel-HP und Suchbereich direkt auf einer aktuellen Vorschau
 - Verwendet lokale Struktur-Templates für Ziel, Beute und Tod; offizielle API- und Plugin-Daten sind technisch vom Automatisierungspfad getrennt
 - Pausiert bei Fokusverlust, geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
-- Paart ein Main-Profil mit einem Support-/Ringmaster-Profil für reaktives Heilen, zeitgesteuerte Buffs und Auto-Follow
+- Paart ein Main-Profil mit einem Support-/Ringmaster-Profil für priorisiertes Heilen, Main-/Selbst-Buffs und Auto-Follow
+- Ein Einrichtungsassistent, eine Start-Voreinstellung und eine Live-Checkliste führen durch die zwei Pflicht-Kalibrierungen
+- Optionale Notfallheilung, Support-Selbstheilung, MP-Tränke und Wiederbelebung sind standardmäßig deaktiviert
 - Hintergrund-Eingaben sind auf das ausdrücklich gewählte Support-Profil und die CDP-`Input`-Domäne begrenzt
 - Globaler Not-Aus: `Ctrl+Shift+F12`
 
@@ -289,8 +291,8 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-4.0.2--automation.1-green?style=flat-square)
-![Release](https://img.shields.io/badge/Release-March_2026-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.4-green?style=flat-square)
+![Release](https://img.shields.io/badge/Release-July_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
@@ -315,13 +317,15 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Calibrates player HP, target HP, and the target scan area on a current frame preview
 - Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
 - Pauses on focus loss, workbench close, detected death, and every state timeout
-- Pairs an explicit Main profile with a Support/Ringmaster profile for reactive healing, scheduled buffs, and auto-follow
+- Pairs an explicit Main profile with a Support/Ringmaster profile for prioritized healing, Main/self buffs, and auto-follow
+- A setup assistant, starter preset, and live checklist guide the two required Support calibrations
+- Optional emergency healing, Support self-heal, MP potion, and bounded resurrection are disabled by default
 - Background input is restricted to the selected Support profile and the CDP `Input` domain
 - Global emergency stop: `Ctrl+Shift+F12`
 
 For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
 
-Version `4.0.2-automation.3` adds supervised Main/Support pairing. The launcher profile list identifies each client; you calibrate the Main's party HP bar and party row on the Support view, then configure heal, buff, and follow keys.
+Version `4.0.2-automation.4` adds a guided Support setup and a strict priority scheduler. Start with the preset and two required party calibrations; enable self-care or resurrection only after basic healing is verified.
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles

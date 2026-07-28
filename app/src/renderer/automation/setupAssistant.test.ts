@@ -1,0 +1,60 @@
+import { describe, expect, it } from "vitest";
+import { automationSetupChecklist, type SetupReadinessInput } from "./setupAssistant";
+
+const readySupport: SetupReadinessInput = {
+    mode: "support",
+    mainProfileId: "main",
+    supportProfileId: "support",
+    hasPlayerHp: false,
+    hasTargetTemplate: false,
+    hasMainPartyHp: true,
+    hasMainPartyRow: true,
+    hasSupportHealKey: true,
+    selfHealEnabled: false,
+    hasSupportHp: false,
+    mpPotionEnabled: false,
+    hasSupportMp: false,
+    resurrectionEnabled: false,
+    hasDeathTemplate: false,
+    acknowledged: true,
+};
+
+describe("automationSetupChecklist", () => {
+    it("keeps starter Support setup limited to the required five steps", () => {
+        const checks = automationSetupChecklist(readySupport);
+        expect(checks.map((check) => check.id)).toEqual([
+            "main_profile",
+            "support_profile",
+            "main_party_hp",
+            "main_party_row",
+            "support_heal_key",
+            "acknowledgement",
+        ]);
+        expect(checks.every((check) => check.ready)).toBe(true);
+    });
+
+    it("adds only the calibrations required by enabled optional features", () => {
+        const checks = automationSetupChecklist({
+            ...readySupport,
+            selfHealEnabled: true,
+            mpPotionEnabled: true,
+            resurrectionEnabled: true,
+        });
+        expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual([
+            "support_hp",
+            "support_mp",
+            "death_template",
+        ]);
+    });
+
+    it("shows combat requirements alongside Support in combined mode", () => {
+        const checks = automationSetupChecklist({
+            ...readySupport,
+            mode: "combat_support",
+        });
+        expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual([
+            "main_hp",
+            "target_template",
+        ]);
+    });
+});

@@ -1,6 +1,18 @@
 # 📦 更新日志
 
 ---
+## 版本 4.0.2-automation.4
+
+### Smart Support 引导式设置
+
+- 新增入门预设、按模式显示的校准按钮和实时设置清单。
+- 新增有优先级的 Main 紧急/常规治疗，以及可选的 Support 自疗、MP 药水和有限次数的验证复活。
+- 增益现在可使用 `按键:秒数:目标` 指定 Main 或 Support；高级和可选设置默认折叠。
+- 官方 API、插件、DOM、内存和封包数据继续与自动化隔离。
+
+最短设置步骤请参阅 [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md)。
+
+---
 ## 版本 4.0.2-automation.3
 
 ### Main 与 Support 配对自动化

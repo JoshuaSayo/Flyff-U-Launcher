@@ -109,7 +109,7 @@ If no loot template is captured or matched, the FSM uses the configured **Pickup
 3. Click **Capture death dialog**.
 4. Select a stable, distinctive part of the dialog.
 
-When this template matches, automation pauses and requires manual recovery. Capturing it is strongly recommended.
+When auto-resurrection is disabled, a matching death template pauses automation for manual recovery. When auto-resurrection is enabled, the bounded Support scheduler uses this template to decide when to cast the configured resurrection key and pauses if its verification limit is exhausted. Capturing a precise template is strongly recommended.
 
 ## Test calibration in Observer mode
 
@@ -128,39 +128,73 @@ The default template threshold is `0.82`. It is applied to a normalized structur
 
 This replaces SmartFS's name scan with explicit launcher profile pairing. The launcher already knows each profile and its configured character name, so you choose the roles directly.
 
+### Fastest basic healer setup (recommended)
+
 1. Create separate launcher profiles for the Main character and Ringmaster/healer.
-2. Open both profiles and log in manually.
-3. Put them in **Grid View** or a two-client Split layout so both game surfaces remain rendered.
-4. Open the workbench and choose the played/attacking character under **Main profile**.
-5. Under **Paired Support**, choose the Ringmaster/healer under **Support client**.
-6. Open the party panel on the Support client and make sure Main is listed.
-7. Click **Main party HP (Support view)**. The preview switches to Support. Drag only over the colored interior of Main's party HP bar.
-8. Click **Main party row (Support view)** and drag over Main's clickable name row. This is how Support selects Main before healing or buffing.
-9. Enter the **Support heal key** and the HP thresholds.
-10. Configure buffs using `key:seconds`. Example: `1:600, 2:600, F3:900`.
-11. Configure the follow key and interval. `Z` is only the default; use the key assigned in your game.
-12. Click **Save profile**.
+2. Open both profiles, log in manually, and put them in **Grid View** or a two-client Split layout so both game surfaces remain rendered.
+3. Open the workbench for Main and select **Support healer/buffer** mode.
+4. Click **Apply starter preset**. It enables only Main healing and follow with conservative defaults.
+5. Under **Support client**, select the Ringmaster/healer.
+6. Open the party panel on Support and make sure Main is visible.
+7. Click **1. Main party HP**. The preview switches to Support. Drag only over the colored interior of Main's party HP bar.
+8. Click **2. Main party row** and drag over Main's clickable name row.
+9. Confirm the Support heal and follow keys match the game's action bar.
+10. Use the **Setup Assistant** checklist. When every required row is checked, click **Save profile**.
+11. Check the supervision acknowledgement and click **Start Support**.
+
+That is the complete minimum setup. The detailed emergency, optional self-care, resurrection, and advanced timing sections stay collapsed until you need them. The assistant reports exactly what is missing instead of letting Start fail silently.
 
 The role selection is stored on the Main automation profile. Main and Support cannot be the same launcher profile.
 
-### Verify Support mode
+### Verify basic healing
 
-1. Select **Support healer/buffer**. This leaves Main combat under your manual control.
-2. Check the supervision acknowledgement and click **Start**.
-3. Keep the Main client in the foreground.
-4. Watch **Main party** in the status metrics. Damage Main manually and confirm the value decreases.
-5. When HP passes **Heal Main below**, Support clicks Main's calibrated party row and uses the heal key until **Heal Main until** is reached.
-6. Confirm each configured buff is cast once after starting, then independently when its interval expires.
-7. Confirm the **Support** metric reports the last action, such as `Heal 4`, `Buff F3`, or `Auto-follow Z`.
-8. Stop and correct calibration immediately if Support targets the wrong party member.
+1. Keep Main in the foreground.
+2. Watch **Main party** in the status metrics. Damage Main manually and confirm the percentage decreases.
+3. When it passes **Heal Main below**, confirm Support clicks Main's calibrated row and uses the heal key.
+4. Confirm healing continues only until **Heal Main until** is reached.
+5. Read **Support** for the last action, such as `Heal 4` or `Auto-follow Z`.
+6. Stop and correct calibration immediately if Support selects the wrong party member.
 
 After this test, select **Combat + Support** if you want the existing Main Combat FSM and the Support healer/buffer scheduler running together.
 
+### Add Main and self buffs
+
+Enter one buff per comma using `key:seconds:target`:
+
+- `1:600:main` selects Main and casts key 1 every 600 seconds.
+- `F3:900:self` presses the configured deselect key, then casts F3 on Support every 900 seconds.
+
+The default deselect key is **Backquote**. It must match the game's “clear target” binding before using self-heal or self-targeted buffs. Each buff has an independent timer.
+
+### Enable optional self-care
+
+Enable optional features one at a time and verify each metric before enabling the next:
+
+1. **Support self-heal:** enable it, set the key and thresholds, then calibrate **Support HP** over Support's own red HP fill.
+2. **MP potion:** enable it, set the key and cooldown, then calibrate **Support MP** over Support's own blue MP fill.
+3. Confirm **Support HP** and **Support MP** move correctly in the status panel.
+
+The Setup Assistant adds a required calibration row only for the optional feature you enabled.
+
+### Enable auto-resurrection
+
+1. Capture a small, reliable **death dialog** template while Main is dead.
+2. Enable auto-resurrection and set the Support resurrection key.
+3. Keep the default bounded retry interval and attempt limit for the first test.
+4. Supervise a safe test. The scheduler selects Main, casts resurrection, and verifies success by waiting for Main party HP to return.
+5. If HP is not restored after the configured attempts, automation pauses instead of retrying forever.
+
 Support action priority is:
 
-1. Reactive healing.
-2. One due buff.
-3. Periodic auto-follow.
+1. Verified auto-resurrection.
+2. Emergency Main healing.
+3. Support self-healing.
+4. Stable normal Main healing.
+5. Support MP potion.
+6. One due Main- or self-targeted buff.
+7. Periodic auto-follow.
+
+Normal healing requires the configured number of consecutive low-HP samples. Emergency healing reacts immediately below its lower threshold. This helps reject a single noisy HP reading without delaying critical healing.
 
 Do not open DevTools or activate controller **Forward Hold** on the paired Support client while automation is armed. These features use the same Chromium debugger attachment, so automation fails closed instead of competing for input ownership.
 
@@ -179,7 +213,7 @@ Do not open DevTools or activate controller **Forward Hold** on the paired Suppo
 | Vision tick | `500` | Milliseconds between perception cycles |
 | Action interval | `850` | Minimum delay between repeated actions |
 
-Allowed keys are letters, digits, arrows, `Space`, `Tab`, and `F1` through `F12`. Attack keys must be separated with commas.
+Allowed keys are letters, digits, arrows, `Space`, `Tab`, `Escape`, `Backquote`, and `F1` through `F12`. Attack keys must be separated with commas.
 
 Click **Save profile** after changing the settings.
 
@@ -206,7 +240,7 @@ Keep supervising the game. Opening another application or moving focus away from
 | `ATTACKING` | Cycling the configured attack keys |
 | `HEALING` | Using the heal key until HP reaches the safe threshold |
 | `LOOTING` | Clicking matched loot or using the pickup key |
-| `SUPPORTING` | Monitoring Main's party HP and scheduling heal, buff, and follow actions on Support |
+| `SUPPORTING` | Running the bounded Support priority scheduler; inspect Main/Support HP, MP, burst, resurrection attempts, and last action |
 | `PAUSED` | Sending no input; manual resume is required |
 | `FAULTED` | Capture, client, or validation failed; read the reason shown |
 | `STOPPED` | Runtime and input ownership are fully stopped |
@@ -220,7 +254,7 @@ The reason text below the status explains the last transition or safety stop.
 - **Emergency stop** fully stops the session and releases input ownership.
 - `Ctrl+Shift+F12` is the global emergency-stop shortcut.
 - Closing the workbench pauses the session.
-- A detected death, lost focus, or state timeout pauses the session.
+- A detected death pauses the session unless bounded auto-resurrection is enabled. Lost focus or a state timeout always pauses.
 
 After a pause, correct the cause, return to the workbench, acknowledge supervision, and click **Resume**.
 
@@ -258,10 +292,13 @@ Verify:
 - The workbench preview says **Support view** during party calibration.
 - **Main party HP** covers only Main's party HP fill.
 - **Main party row** covers Main's clickable name row.
-- Buff entries use `key:seconds`, not just a list of keys.
+- Buff entries use `key:seconds:target`, for example `1:600:main, F3:900:self`.
 - The Main client remains focused.
 - DevTools is closed and controller Forward Hold is disabled for Support.
 - The status **Main party** value is changing and **Support** shows dispatched actions.
+- Optional self-heal has a calibrated **Support HP** region and a valid metric.
+- Optional MP potion has a calibrated **Support MP** region and a valid metric.
+- Auto-resurrection has a reliable death template and is not paused after its configured attempt limit.
 
 If the Support preview is blank, place both profiles in Grid/Split view, wait for both games to render, and refresh again.
 

@@ -45,6 +45,10 @@ const EMPTY_METRICS: AutomationMetrics = {
     targetScore: null,
     lootScore: null,
     mainPartyHp: null,
+    supportHp: null,
+    supportMp: null,
+    supportEmergency: false,
+    supportResurrectionAttempts: 0,
     supportProfileId: null,
     supportAction: null,
     captureMs: null,
@@ -82,9 +86,17 @@ export class AutomationService {
     private captureSourceLogged = new Set<string>();
     private supportBuffDueAt = new Map<string, number>();
     private lastSupportHealAt = 0;
+    private lastSupportSelfHealAt = 0;
+    private lastSupportMpPotionAt = 0;
+    private lastSupportResurrectionAt = 0;
     private lastSupportFollowAt = 0;
     private lastSupportAction: string | null = null;
     private supportHealing = false;
+    private supportSelfHealing = false;
+    private supportEmergency = false;
+    private supportLowHpSamples = 0;
+    private supportResurrectionAttempts = 0;
+    private supportDeathActive = false;
 
     constructor(private readonly options: AutomationServiceOptions) {}
 
@@ -156,6 +168,15 @@ export class AutomationService {
             if (!config.supportProfileId) throw new Error("Choose a different Support client profile");
             if (!config.mainPartyHpRoi) throw new Error("Calibrate the Main party HP region on the Support view");
             if (!config.mainPartyTargetRoi) throw new Error("Calibrate the Main party target row on the Support view");
+            if (config.supportSelfHealEnabled && !config.supportSelfHpRoi) {
+                throw new Error("Calibrate the Support HP region before enabling Support self-heal");
+            }
+            if (config.supportMpPotionEnabled && !config.supportMpRoi) {
+                throw new Error("Calibrate the Support MP region before enabling MP potion");
+            }
+            if (config.supportResurrectionEnabled && !templates.death) {
+                throw new Error("Capture the Main death dialog before enabling auto-resurrection");
+            }
             supportTarget = this.options.resolveTarget(config.supportProfileId);
             if (!supportTarget) throw new Error("Open the selected Support profile in the launcher first");
         }
@@ -179,9 +200,17 @@ export class AutomationService {
         this.lastActionAt = 0;
         this.lastSearchAt = 0;
         this.lastSupportHealAt = 0;
+        this.lastSupportSelfHealAt = 0;
+        this.lastSupportMpPotionAt = 0;
+        this.lastSupportResurrectionAt = 0;
         this.lastSupportFollowAt = 0;
         this.lastSupportAction = null;
         this.supportHealing = false;
+        this.supportSelfHealing = false;
+        this.supportEmergency = false;
+        this.supportLowHpSamples = 0;
+        this.supportResurrectionAttempts = 0;
+        this.supportDeathActive = false;
         this.supportBuffDueAt = new Map(config.supportBuffs.map((buff) => [buff.key, 0]));
         const initialState: AutomationState = config.mode === "observer"
             ? "observing"
@@ -230,9 +259,17 @@ export class AutomationService {
         this.config = null;
         this.supportBuffDueAt.clear();
         this.lastSupportHealAt = 0;
+        this.lastSupportSelfHealAt = 0;
+        this.lastSupportMpPotionAt = 0;
+        this.lastSupportResurrectionAt = 0;
         this.lastSupportFollowAt = 0;
         this.lastSupportAction = null;
         this.supportHealing = false;
+        this.supportSelfHealing = false;
+        this.supportEmergency = false;
+        this.supportLowHpSamples = 0;
+        this.supportResurrectionAttempts = 0;
+        this.supportDeathActive = false;
         this.statusValue.profileId = null;
         this.statusValue.armed = false;
         this.statusValue.metrics = { ...EMPTY_METRICS };
@@ -352,6 +389,12 @@ export class AutomationService {
             const mainPartyHp = supportCaptured && config.mainPartyHpRoi
                 ? detectBarFill(supportCaptured.pixels, config.mainPartyHpRoi)
                 : null;
+            const supportHp = supportCaptured && config.supportSelfHpRoi
+                ? detectBarFill(supportCaptured.pixels, config.supportSelfHpRoi)
+                : null;
+            const supportMp = supportCaptured && config.supportMpRoi
+                ? detectBarFill(supportCaptured.pixels, config.supportMpRoi, "mana")
+                : null;
             const threshold = config.templateThreshold;
             const targetVisible = (result.target?.score ?? 0) >= threshold;
             const lootVisible = (result.loot?.score ?? 0) >= threshold;
@@ -363,7 +406,7 @@ export class AutomationService {
                 this.lostTargetFrames = 0;
             }
 
-            if (deathVisible) {
+            if (deathVisible && !(supportProfileId && config.supportResurrectionEnabled)) {
                 this.pause("Death screen detected; manual recovery required");
                 return;
             }
@@ -374,7 +417,14 @@ export class AutomationService {
                 return;
             }
             if (supportCaptured && supportProfileId) {
-                await this.performSupportAction(supportProfileId, supportCaptured.pixels, mainPartyHp);
+                await this.performSupportAction(
+                    supportProfileId,
+                    supportCaptured.pixels,
+                    mainPartyHp,
+                    supportHp,
+                    supportMp,
+                    deathVisible,
+                );
             }
             this.statusValue.metrics = {
                 playerHp: result.playerHp,
@@ -382,18 +432,27 @@ export class AutomationService {
                 targetScore: result.target?.score ?? null,
                 lootScore: result.loot?.score ?? null,
                 mainPartyHp,
+                supportHp,
+                supportMp,
+                supportEmergency: this.supportEmergency,
+                supportResurrectionAttempts: this.supportResurrectionAttempts,
                 supportProfileId,
                 supportAction: this.lastSupportAction,
                 captureMs: Math.round(Math.max(captured.captureMs, supportCaptured?.captureMs ?? 0) * 10) / 10,
                 analyzeMs: Math.round(analyzeMs * 10) / 10,
             };
+            if (generation !== this.generation
+                || ["paused", "stopped", "faulted"].includes(this.statusValue.state)) {
+                this.emit();
+                return;
+            }
             const current = this.statusValue.state;
             const next = decideAutomationState(current, {
                 mode: config.mode,
                 playerHp: result.playerHp,
                 targetVisible,
                 lootVisible,
-                deathVisible,
+                deathVisible: deathVisible && !(supportProfileId && config.supportResurrectionEnabled),
                 elapsedInStateMs: Date.now() - this.stateEnteredAt,
                 healThreshold: config.healThreshold,
                 safeHpThreshold: config.safeHpThreshold,
@@ -409,7 +468,10 @@ export class AutomationService {
             }
             this.emit();
             if (generation === this.generation && !["paused", "stopped", "faulted"].includes(this.statusValue.state)) {
-                this.schedule(config.tickMs, generation);
+                const nextTickMs = this.supportEmergency
+                    ? Math.min(config.tickMs, config.supportEmergencyHealIntervalMs)
+                    : config.tickMs;
+                this.schedule(nextTickMs, generation);
             }
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
@@ -425,13 +487,37 @@ export class AutomationService {
         supportProfileId: string,
         frame: PixelFrame,
         mainPartyHp: number | null,
+        supportHp: number | null,
+        supportMp: number | null,
+        deathVisible: boolean,
     ): Promise<void> {
         if (!this.config || !this.config.mainPartyTargetRoi) return;
         const config = this.config;
         const now = Date.now();
-        if (mainPartyHp !== null) {
-            if (mainPartyHp < config.supportHealThreshold) this.supportHealing = true;
-            if (mainPartyHp >= config.supportSafeHpThreshold) this.supportHealing = false;
+        if (mainPartyHp === null) {
+            this.supportEmergency = false;
+            this.supportLowHpSamples = 0;
+            this.supportHealing = false;
+        } else {
+            this.supportEmergency = mainPartyHp < config.supportEmergencyHealThreshold;
+            if (this.supportEmergency) {
+                this.supportHealing = true;
+                this.supportLowHpSamples = config.supportHpStableSamples;
+            } else if (mainPartyHp >= config.supportSafeHpThreshold) {
+                this.supportHealing = false;
+                this.supportLowHpSamples = 0;
+            } else if (mainPartyHp < config.supportHealThreshold) {
+                this.supportLowHpSamples++;
+                if (this.supportLowHpSamples >= config.supportHpStableSamples) this.supportHealing = true;
+            } else if (!this.supportHealing) {
+                this.supportLowHpSamples = 0;
+            }
+        }
+        if (!config.supportSelfHealEnabled || supportHp === null) {
+            this.supportSelfHealing = false;
+        } else {
+            if (supportHp < config.supportSelfHealThreshold) this.supportSelfHealing = true;
+            if (supportHp >= config.supportSelfSafeHpThreshold) this.supportSelfHealing = false;
         }
         const targetMain = async (): Promise<void> => {
             const rect = config.mainPartyTargetRoi!;
@@ -441,9 +527,13 @@ export class AutomationService {
                 (rect.y + rect.height / 2) * frame.height,
             );
         };
-        const follow = async (afterAction: boolean): Promise<void> => {
+        const targetSelf = async (): Promise<void> => {
+            await this.input.pressSupportKey(supportProfileId, config.supportDeselectKey);
+        };
+        const follow = async (afterAction: boolean, mainAlreadyTargeted = false): Promise<void> => {
             if (!config.supportFollowAfterAction) return;
             if (Date.now() - this.lastSupportFollowAt < config.supportFollowIntervalMs) return;
+            if (!mainAlreadyTargeted) await targetMain();
             await this.input.pressSupportKey(supportProfileId, config.supportFollowKey);
             this.lastSupportFollowAt = Date.now();
             this.lastSupportAction = afterAction && this.lastSupportAction
@@ -451,27 +541,106 @@ export class AutomationService {
                 : "Auto-follow " + config.supportFollowKey;
             this.recordAction();
         };
+        const castResurrection = async (): Promise<void> => {
+            await targetMain();
+            await this.input.pressSupportKey(supportProfileId, config.supportResurrectionKey);
+            this.lastSupportResurrectionAt = Date.now();
+            this.supportResurrectionAttempts++;
+            this.lastSupportAction = "Resurrection " + this.supportResurrectionAttempts
+                + "/" + config.supportResurrectionMaxAttempts;
+            this.recordAction();
+            logInfo(
+                "Support " + supportProfileId + " attempted Main resurrection "
+                    + this.supportResurrectionAttempts + "/" + config.supportResurrectionMaxAttempts,
+                "Automation",
+            );
+        };
 
-        if (this.supportHealing && now - this.lastSupportHealAt >= config.supportHealIntervalMs) {
+        if (config.supportResurrectionEnabled && (deathVisible || this.supportDeathActive)) {
+            this.supportDeathActive = true;
+            this.supportEmergency = false;
+            this.supportHealing = false;
+            if (!deathVisible && mainPartyHp !== null && mainPartyHp > 0.02) {
+                logInfo("Support verified Main resurrection from the restored party HP bar", "Automation");
+                this.supportDeathActive = false;
+                this.supportResurrectionAttempts = 0;
+                this.lastSupportAction = "Resurrection verified";
+            } else {
+                if (this.supportResurrectionAttempts >= config.supportResurrectionMaxAttempts) {
+                    if (now - this.lastSupportResurrectionAt < config.supportResurrectionRetryMs) return;
+                    this.lastSupportAction = "Resurrection failed";
+                    this.pause("Auto-resurrection exhausted "
+                        + config.supportResurrectionMaxAttempts + " verified attempts; recover Main manually");
+                    return;
+                }
+                if (now - this.lastSupportResurrectionAt >= config.supportResurrectionRetryMs) {
+                    await castResurrection();
+                }
+                return;
+            }
+        }
+
+        const healInterval = this.supportEmergency
+            ? config.supportEmergencyHealIntervalMs
+            : config.supportHealIntervalMs;
+        if (this.supportEmergency && now - this.lastSupportHealAt >= healInterval) {
+            await targetMain();
+            await this.input.pressSupportKey(supportProfileId, config.supportHealKey);
+            this.lastSupportHealAt = Date.now();
+            this.lastSupportAction = "Emergency heal " + config.supportHealKey;
+            this.recordAction();
+            logInfo("Support " + supportProfileId + " emergency-healed Main at "
+                + Math.round((mainPartyHp ?? 0) * 100) + "%", "Automation");
+            return;
+        }
+
+        if (this.supportSelfHealing
+            && now - this.lastSupportSelfHealAt >= config.supportSelfHealIntervalMs) {
+            await targetSelf();
+            await this.input.pressSupportKey(supportProfileId, config.supportSelfHealKey);
+            this.lastSupportSelfHealAt = Date.now();
+            this.lastSupportAction = "Self-heal " + config.supportSelfHealKey;
+            this.recordAction();
+            logInfo("Support " + supportProfileId + " self-healed at "
+                + Math.round((supportHp ?? 0) * 100) + "%", "Automation");
+            return;
+        }
+
+        if (this.supportHealing && now - this.lastSupportHealAt >= healInterval) {
             await targetMain();
             await this.input.pressSupportKey(supportProfileId, config.supportHealKey);
             this.lastSupportHealAt = Date.now();
             this.lastSupportAction = "Heal " + config.supportHealKey;
             this.recordAction();
-            logInfo("Support " + supportProfileId + " healed Main at " + Math.round((mainPartyHp ?? 0) * 100) + "%", "Automation");
-            await follow(true);
+            logInfo("Support " + supportProfileId + " healed Main at "
+                + Math.round((mainPartyHp ?? 0) * 100) + "%", "Automation");
+            await follow(true, true);
+            return;
+        }
+
+        if (config.supportMpPotionEnabled
+            && supportMp !== null
+            && supportMp < config.supportMpPotionThreshold
+            && now - this.lastSupportMpPotionAt >= config.supportMpPotionCooldownMs) {
+            await this.input.pressSupportKey(supportProfileId, config.supportMpPotionKey);
+            this.lastSupportMpPotionAt = Date.now();
+            this.lastSupportAction = "MP potion " + config.supportMpPotionKey;
+            this.recordAction();
+            logInfo("Support " + supportProfileId + " used an MP potion at "
+                + Math.round(supportMp * 100) + "%", "Automation");
             return;
         }
 
         const dueBuff = config.supportBuffs.find((buff) => now >= (this.supportBuffDueAt.get(buff.key) ?? 0));
         if (dueBuff) {
-            await targetMain();
+            if (dueBuff.target === "self") await targetSelf();
+            else await targetMain();
             await this.input.pressSupportKey(supportProfileId, dueBuff.key);
             this.supportBuffDueAt.set(dueBuff.key, Date.now() + dueBuff.intervalSec * 1000);
-            this.lastSupportAction = "Buff " + dueBuff.key;
+            this.lastSupportAction = "Buff " + dueBuff.key + " → " + dueBuff.target;
             this.recordAction();
-            logInfo("Support " + supportProfileId + " cast buff " + dueBuff.key, "Automation");
-            await follow(true);
+            logInfo("Support " + supportProfileId + " cast " + dueBuff.target + " buff " + dueBuff.key, "Automation");
+            await follow(true, dueBuff.target === "main");
             return;
         }
 

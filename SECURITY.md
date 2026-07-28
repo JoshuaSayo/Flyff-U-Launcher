@@ -14,7 +14,7 @@ Launcher profiles can contain authenticated Electron session cookies and local s
 
 ## Automation boundary
 
-The automation subsystem is intentionally limited to captured pixels, local configuration/templates, foreground input for the explicitly selected Main client, and CDP `Input` events for one explicitly paired Support client.
+The automation subsystem is intentionally limited to captured pixels, local configuration/templates, foreground input for the explicitly selected Main client, and CDP `Input` events for one explicitly paired Support client. Main party HP, Support HP, Support MP, and death state are derived only from explicitly calibrated pixel regions or local structural templates.
 
 It must not gain a dependency on:
 
@@ -24,7 +24,7 @@ It must not gain a dependency on:
 - game-page DOM access, `executeJavaScript`, CDP Runtime/DOM/Network domains, or debugger use outside `inputFacade.ts`;
 - anti-cheat bypass or evasion features.
 
-The narrow Support exception may attach Electron's Chromium debugger only to dispatch keyboard and mouse events through the CDP `Input` domain. It must never evaluate page JavaScript, inspect the DOM, read traffic, or attach to an unpaired client. The Main client must remain focused while automation is armed.
+The narrow Support exception may attach Electron's Chromium debugger only to dispatch keyboard and mouse events through the CDP `Input` domain. It must never evaluate page JavaScript, inspect the DOM, read traffic, or attach to an unpaired client. Optional self-heal, MP potion, and auto-resurrection reuse that same isolated input path; resurrection attempts are finite and verified through captured Main-party HP pixels. The Main client must remain focused while automation is armed.
 
 Changes to `app/src/main/automation` must keep `boundary.test.ts` passing. All foreground and Support input emission must remain centralized in `inputFacade.ts`, and workbench mutations must remain restricted to the dedicated trusted renderer.
 

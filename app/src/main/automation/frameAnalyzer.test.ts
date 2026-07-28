@@ -28,6 +28,16 @@ describe("frameAnalyzer", () => {
         expect(detectBarFill(source, { x: 0, y: 0, width: 1, height: 1 })).toBeCloseTo(0.60, 1);
     });
 
+    it("measures a blue MP bar without treating it as HP", () => {
+        const source = frame(100, 8, [25, 25, 25]);
+        for (let y = 1; y < 7; y++) {
+            for (let x = 0; x < 35; x++) setPixel(source, x, y, [30, 95, 225]);
+        }
+        const rect = { x: 0, y: 0, width: 1, height: 1 };
+        expect(detectBarFill(source, rect, "mana")).toBeCloseTo(0.35, 1);
+        expect(detectBarFill(source, rect)).toBeNull();
+    });
+
     it("finds a brightness-normalized structural template", () => {
         const source = frame(48, 32, [18, 18, 18]);
         const template = frame(8, 6, [18, 18, 18]);

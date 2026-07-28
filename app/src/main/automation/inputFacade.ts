@@ -16,6 +16,8 @@ function cdpKeyInfo(keyCode: string): CdpKeyInfo | null {
         UP: { key: "ArrowUp", code: "ArrowUp", vkc: 38 },
         RIGHT: { key: "ArrowRight", code: "ArrowRight", vkc: 39 },
         DOWN: { key: "ArrowDown", code: "ArrowDown", vkc: 40 },
+        ESCAPE: { key: "Escape", code: "Escape", vkc: 27 },
+        BACKQUOTE: { key: "`", code: "Backquote", vkc: 192 },
     };
     if (special[key]) return special[key];
     if (/^[A-Z]$/.test(key)) return { key: key.toLowerCase(), code: "Key" + key, vkc: key.charCodeAt(0) };

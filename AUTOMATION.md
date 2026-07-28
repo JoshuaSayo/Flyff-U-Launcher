@@ -48,6 +48,8 @@ Choose a calibration action and drag a tight rectangle on the current preview:
 - **Target scan area**: the gameplay region where target and loot templates should be searched;
 - **Main party HP (Support view)**: the colored fill inside the Main character's party HP bar as seen by Support;
 - **Main party row (Support view)**: the Main character's name row that Support clicks before casting;
+- **Support HP (Support view)**: the colored fill inside Support's own HP bar, required only when Support self-heal is enabled;
+- **Support MP (Support view)**: the colored fill inside Support's own blue MP bar, required only when MP potion is enabled;
 - **Capture target label**: a small, distinctive monster label or other stable target structure;
 - **Capture loot**: a small, distinctive loot structure;
 - **Capture death dialog**: a stable part of the death/respawn dialog.
@@ -76,7 +78,13 @@ Click **Save profile** after changing regions, templates, keys, or thresholds. C
 | Support heal key | Heal skill on the Support client's action bar | 4 |
 | Heal Main below / until | Hysteresis thresholds for reactive healing | 0.50 / 0.80 |
 | Heal interval | Minimum interval between reactive heals | 1100 ms |
-| Buffs | Comma-separated `key:seconds` schedule, such as `1:600, F3:900` | Empty |
+| Emergency heal | Immediate Main heal threshold and faster repeat interval | 0.25 / 300 ms |
+| Stable low samples | Consecutive low Main HP readings required for normal healing | 2 |
+| Deselect key | Clears Main targeting before a self-only Support action | Backquote |
+| Support self-heal | Optional Support HP thresholds, key, and interval | Disabled |
+| MP potion | Optional Support MP threshold, key, and cooldown | Disabled |
+| Auto-resurrection | Optional death-template-driven key, retry interval, and attempt limit | Disabled |
+| Buffs | Comma-separated `key:seconds:target` entries, such as `1:600:main, F3:900:self` | Empty |
 | Auto-follow key / interval | Periodically resumes following Main | Z / 5000 ms |
 
 The implementation also bounds approach, loot, and global state timeouts. Invalid or unsafe values are normalized before they are persisted.
@@ -95,16 +103,28 @@ To use **Combat FSM**:
 
 Combat mode pauses when the client loses focus. It also pauses when the workbench closes, a death template matches, or a state exceeds its safety timeout. After correcting the cause, refocus the game client, acknowledge supervision again, and click **Resume**.
 
-To use paired Support:
+To use paired Support with the shortest safe setup:
 
-1. Put Main and Support in a launcher Grid/Split layout and select Main in **Main profile**.
-2. Choose the Ringmaster/healer in **Support client**. The same profile cannot fill both roles.
-3. Open the party panel on Support. Select **Main party HP (Support view)** and draw only the Main's HP fill.
-4. Select **Main party row (Support view)** and draw the clickable Main name row.
-5. Configure the Support heal key, independent buff schedules, and auto-follow key.
-6. Test **Support healer/buffer** while playing Main manually, or choose **Combat + Support** to run both systems.
+1. Put Main and Support in a launcher Grid/Split layout and select **Support healer/buffer** mode.
+2. Click **Apply starter preset**. This enables only Main healing and follow; optional self-care and resurrection remain off.
+3. Select the Ringmaster/healer under **Support client**. The same profile cannot fill both roles.
+4. Open the party panel on Support.
+5. Complete the two numbered buttons: **1. Main party HP** and **2. Main party row**.
+6. Follow the live **Setup Assistant** until every required item is checked, then save and start while playing Main manually.
 
-Support priority is reactive healing, then one due buff, then periodic follow. Each buff has its own next-due timestamp. Healing remains active until the safe threshold is reached. The Main client must stay focused; Support input is delivered in the background only to the paired profile.
+The workbench keeps emergency/stability settings, optional self-care, resurrection, and advanced timing in collapsed sections. Enable optional features one at a time after basic Main healing is verified. The assistant adds only the extra calibration each enabled feature needs.
+
+Support action priority is:
+
+1. Verified auto-resurrection.
+2. Emergency Main healing.
+3. Support self-healing.
+4. Stable normal Main healing.
+5. Support MP potion.
+6. One due Main- or self-targeted buff.
+7. Periodic auto-follow.
+
+Each buff has its own next-due timestamp. Normal healing requires consecutive low readings and remains active until the safe threshold is reached; emergency healing reacts immediately. The Main client must stay focused, and Support input is delivered in the background only to the paired profile.
 
 Use **Emergency stop** for a normal immediate stop, or press the global shortcut `Ctrl+Shift+F12` even when another window is active. Stop and pause both release all keys and mouse buttons tracked by the input facade.
 
@@ -118,7 +138,7 @@ Use **Emergency stop** for a normal immediate stop, or press the global shortcut
 | Attacking | Cycles configured attack keys | Target absent for three frames, or low player HP |
 | Healing | Repeats the heal key at the action interval | Player HP reaches the safe threshold |
 | Looting | Clicks matched loot or uses the fallback pickup key | Loot timeout with no visible loot |
-| Supporting | Monitors Main party HP and schedules heal, buff, and follow actions | User pauses or stops |
+| Supporting | Runs the bounded Support priority scheduler and reports Main/Support HP, MP, burst, and resurrection telemetry | User pauses or stops |
 | Paused | No input; held input is released | Explicit supervised resume |
 | Faulted | No input after capture, validation, or client errors | Correct the problem and start again |
 
@@ -146,9 +166,11 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Keep both profiles rendered in Grid/Split view during setup.
 - Confirm the Support preview shows the Ringmaster/healer client.
 - Recalibrate both **Main party HP** and **Main party row** from the Support view.
-- Use `key:seconds` buff entries, for example `1:600, 2:600, F3:900`.
+- Use `key:seconds:target` buff entries, for example `1:600:main, 2:600:main, F3:900:self`.
 - Close DevTools and disable controller Forward Hold for this Support profile; those features cannot share the same debugger attachment.
-- Read **Main party** and **Support** in the status metrics to see perceived HP and the last dispatched action.
+- Read **Main party**, **Support HP**, **Support MP**, and **Support** in the status metrics to see perceived values and the last dispatched action.
+- If self-heal or MP potion is enabled, calibrate the matching Support bar and verify its metric before arming.
+- Auto-resurrection requires a reliable death template. It pauses after the configured attempt limit if Main HP is not restored.
 
 ### Target or loot does not match
 

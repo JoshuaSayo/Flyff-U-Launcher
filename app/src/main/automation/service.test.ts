@@ -74,6 +74,49 @@ function target(focusSucceeds: boolean): {
     };
 }
 
+async function testFrame(
+    width: number,
+    height: number,
+    regions: Array<{
+        x0: number;
+        x1: number;
+        y0: number;
+        y1: number;
+        color: [number, number, number];
+    }>,
+): Promise<Buffer> {
+    const raw = Buffer.alloc(width * height * 4);
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const offset = (y * width + x) * 4;
+            const region = regions.find((candidate) =>
+                x >= candidate.x0 && x < candidate.x1 && y >= candidate.y0 && y < candidate.y1);
+            raw[offset] = region?.color[0] ?? 0;
+            raw[offset + 1] = region?.color[1] ?? 0;
+            raw[offset + 2] = region?.color[2] ?? 0;
+            raw[offset + 3] = 255;
+        }
+    }
+    return sharp(raw, { raw: { width, height, channels: 4 } }).png().toBuffer();
+}
+
+function capturedImage(png: Buffer): NativeImage {
+    return {
+        isEmpty: () => false,
+        toPNG: () => png,
+    } as unknown as NativeImage;
+}
+
+function keyDownCodes(calls: unknown[][]): string[] {
+    return calls
+        .filter(([method, params]) =>
+            method === "Input.dispatchKeyEvent"
+            && typeof params === "object"
+            && params !== null
+            && (params as { type?: unknown }).type === "keyDown")
+        .map(([, params]) => String((params as { code?: unknown }).code));
+}
+
 describe("AutomationService combat arming", () => {
     it("restores and focuses the selected game client before arming", async () => {
         const selected = target(true);
@@ -163,7 +206,7 @@ describe("AutomationService combat arming", () => {
             supportProfileId: "profile-2",
             mainPartyHpRoi: { x: 0.05, y: 0.10, width: 0.40, height: 0.15 },
             mainPartyTargetRoi: { x: 0.05, y: 0.05, width: 0.40, height: 0.10 },
-            supportBuffs: [{ key: "F3", intervalSec: 600 }],
+            supportBuffs: [{ key: "F3", intervalSec: 600, target: "main" as const }],
             supportFollowAfterAction: false,
         };
         const store = {
@@ -183,7 +226,7 @@ describe("AutomationService combat arming", () => {
                 "Input.dispatchKeyEvent",
                 expect.objectContaining({ type: "keyDown", key: "F3" }),
             );
-            expect(service.status().metrics.supportAction).toBe("Buff F3");
+            expect(service.status().metrics.supportAction).toBe("Buff F3 → main");
         });
         expect(support.focusContents).not.toHaveBeenCalled();
         expect(service.status().metrics.supportProfileId).toBe("profile-2");
@@ -223,7 +266,8 @@ describe("AutomationService combat arming", () => {
             supportHealKey: "4",
             supportHealThreshold: 0.50,
             supportSafeHpThreshold: 0.80,
-            supportBuffs: [{ key: "F3", intervalSec: 600 }],
+            supportEmergencyHealThreshold: 0.30,
+            supportBuffs: [{ key: "F3", intervalSec: 600, target: "main" as const }],
             supportFollowAfterAction: false,
         };
         const store = {
@@ -243,13 +287,195 @@ describe("AutomationService combat arming", () => {
                 expect.objectContaining({ type: "keyDown", key: "4" }),
             );
             expect(service.status().metrics.mainPartyHp).not.toBeNull();
-            expect(service.status().metrics.supportAction).toBe("Heal 4");
+            expect(service.status().metrics.supportAction).toBe("Emergency heal 4");
         });
         const keyDowns = support.debuggerSendCommand.mock.calls
             .filter(([method, params]) => method === "Input.dispatchKeyEvent" && params.type === "keyDown")
             .map(([, params]) => params.key);
         expect(keyDowns[0]).toBe("4");
         expect(service.status().metrics.mainPartyHp!).toBeLessThan(0.50);
+        service.stop();
+    });
+
+    it("deselects Main and self-heals Support before maintenance actions", async () => {
+        const main = target(true);
+        const support = target(false);
+        support.value.profileId = "profile-2";
+        const png = await testFrame(100, 60, [
+            { x0: 5, x1: 45, y0: 3, y1: 9, color: [220, 20, 30] },
+            { x0: 5, x1: 13, y0: 18, y1: 24, color: [220, 20, 30] },
+        ]);
+        const image = capturedImage(png);
+        main.capturePage.mockResolvedValue(image);
+        support.capturePage.mockResolvedValue(image);
+        const config = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "support" as const,
+            supportProfileId: "profile-2",
+            mainPartyHpRoi: { x: 0.05, y: 0.05, width: 0.40, height: 0.10 },
+            mainPartyTargetRoi: { x: 0.05, y: 0.02, width: 0.40, height: 0.08 },
+            supportSelfHpRoi: { x: 0.05, y: 0.30, width: 0.40, height: 0.10 },
+            supportSelfHealEnabled: true,
+            supportSelfHealKey: "6",
+            supportSelfHealThreshold: 0.50,
+            supportSelfSafeHpThreshold: 0.80,
+            supportBuffs: [{ key: "F3", intervalSec: 600, target: "main" as const }],
+            supportFollowAfterAction: false,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: false, loot: false, death: false })),
+            templatePath: vi.fn((_profileId: string, kind: string) => kind),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({
+            store,
+            resolveTarget: (profileId) => profileId === "profile-1" ? main.value : support.value,
+        });
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => {
+            expect(service.status().metrics.supportAction).toBe("Self-heal 6");
+        });
+        expect(keyDownCodes(support.debuggerSendCommand.mock.calls).slice(0, 2)).toEqual(["Backquote", "Digit6"]);
+        expect(service.status().metrics.supportHp).toBeLessThan(0.50);
+        service.stop();
+    });
+
+    it("uses an MP potion from the structural blue Support MP bar", async () => {
+        const main = target(true);
+        const support = target(false);
+        support.value.profileId = "profile-2";
+        const png = await testFrame(100, 60, [
+            { x0: 5, x1: 45, y0: 3, y1: 9, color: [220, 20, 30] },
+            { x0: 5, x1: 13, y0: 33, y1: 39, color: [30, 95, 225] },
+        ]);
+        const image = capturedImage(png);
+        main.capturePage.mockResolvedValue(image);
+        support.capturePage.mockResolvedValue(image);
+        const config = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "support" as const,
+            supportProfileId: "profile-2",
+            mainPartyHpRoi: { x: 0.05, y: 0.05, width: 0.40, height: 0.10 },
+            mainPartyTargetRoi: { x: 0.05, y: 0.02, width: 0.40, height: 0.08 },
+            supportMpRoi: { x: 0.05, y: 0.55, width: 0.40, height: 0.10 },
+            supportMpPotionEnabled: true,
+            supportMpPotionKey: "7",
+            supportMpPotionThreshold: 0.50,
+            supportBuffs: [] as Array<{ key: string; intervalSec: number; target: "main" | "self" }>,
+            supportFollowAfterAction: false,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: false, loot: false, death: false })),
+            templatePath: vi.fn((_profileId: string, kind: string) => kind),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({
+            store,
+            resolveTarget: (profileId) => profileId === "profile-1" ? main.value : support.value,
+        });
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => {
+            expect(service.status().metrics.supportAction).toBe("MP potion 7");
+        });
+        expect(keyDownCodes(support.debuggerSendCommand.mock.calls)[0]).toBe("Digit7");
+        expect(service.status().metrics.supportMp).toBeLessThan(0.50);
+        service.stop();
+    });
+
+    it("deselects Main before casting a self-targeted timed buff", async () => {
+        const main = target(true);
+        const support = target(false);
+        support.value.profileId = "profile-2";
+        const png = await testFrame(100, 40, [
+            { x0: 5, x1: 45, y0: 4, y1: 10, color: [220, 20, 30] },
+        ]);
+        const image = capturedImage(png);
+        main.capturePage.mockResolvedValue(image);
+        support.capturePage.mockResolvedValue(image);
+        const config = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "support" as const,
+            supportProfileId: "profile-2",
+            mainPartyHpRoi: { x: 0.05, y: 0.10, width: 0.40, height: 0.15 },
+            mainPartyTargetRoi: { x: 0.05, y: 0.05, width: 0.40, height: 0.10 },
+            supportBuffs: [{ key: "F3", intervalSec: 900, target: "self" as const }],
+            supportFollowAfterAction: false,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: false, loot: false, death: false })),
+            templatePath: vi.fn((_profileId: string, kind: string) => kind),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({
+            store,
+            resolveTarget: (profileId) => profileId === "profile-1" ? main.value : support.value,
+        });
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => {
+            expect(service.status().metrics.supportAction).toBe("Buff F3 → self");
+        });
+        expect(keyDownCodes(support.debuggerSendCommand.mock.calls).slice(0, 2)).toEqual(["Backquote", "F3"]);
+        service.stop();
+    });
+
+    it("attempts configured resurrection and pauses after verified retries are exhausted", async () => {
+        const main = target(true);
+        const support = target(false);
+        support.value.profileId = "profile-2";
+        const png = await testFrame(100, 40, []);
+        const image = capturedImage(png);
+        main.capturePage.mockResolvedValue(image);
+        support.capturePage.mockResolvedValue(image);
+        const config = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "support" as const,
+            tickMs: 250,
+            supportProfileId: "profile-2",
+            mainPartyHpRoi: { x: 0.05, y: 0.10, width: 0.40, height: 0.15 },
+            mainPartyTargetRoi: { x: 0.05, y: 0.05, width: 0.40, height: 0.10 },
+            supportResurrectionEnabled: true,
+            supportResurrectionKey: "F1",
+            supportResurrectionRetryMs: 1500,
+            supportResurrectionMaxAttempts: 1,
+            supportBuffs: [] as Array<{ key: string; intervalSec: number; target: "main" | "self" }>,
+            supportFollowAfterAction: false,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: false, loot: false, death: true })),
+            templatePath: vi.fn((_profileId: string, kind: string) => kind),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({
+            store,
+            resolveTarget: (profileId) => profileId === "profile-1" ? main.value : support.value,
+        });
+        const internal = service as unknown as {
+            analyze: (...args: unknown[]) => Promise<{
+                playerHp: null;
+                targetHp: null;
+                target: null;
+                loot: null;
+                death: { score: number; x: number; y: number; width: number; height: number };
+            }>;
+        };
+        vi.spyOn(internal, "analyze").mockResolvedValue({
+            playerHp: null,
+            targetHp: null,
+            target: null,
+            loot: null,
+            death: { score: 1, x: 0, y: 0, width: 20, height: 10 },
+        });
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => {
+            expect(service.status().state).toBe("paused");
+        }, { timeout: 2500 });
+        expect(keyDownCodes(support.debuggerSendCommand.mock.calls)).toContain("F1");
+        expect(service.status().metrics.supportResurrectionAttempts).toBe(1);
+        expect(service.status().reason).toContain("Auto-resurrection exhausted 1 verified attempts");
         service.stop();
     });
 });

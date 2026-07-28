@@ -2,6 +2,34 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.4] - 2026-07-28
+
+### Added
+
+- Guided setup assistant with an ordered readiness checklist, actionable preflight errors, mode-aware calibration buttons, and a one-click Support starter preset.
+- Emergency burst healing that immediately preempts every maintenance action below a critical Main HP threshold.
+- Consecutive-sample stability gating for normal healing to suppress one-frame HP-bar glitches.
+- Optional Support self-heal using a configurable deselect key and independently calibrated Support HP bar.
+- Optional MP-potion recovery using structural blue-bar detection and a dedicated anti-spam cooldown.
+- Optional auto-resurrection with Main death-template detection, bounded retries, party-HP verification, and a safety pause after exhausted attempts.
+- Main- and self-targeted timed buffs using the `key:seconds:target` format.
+- Support HP, MP, emergency state, resurrection-attempt, and last-action telemetry.
+- Focused tests for setup readiness, blue MP detection, priority preemption, self-targeting, migration, and resurrection exhaustion.
+
+### Changed
+
+- Basic Support controls remain visible while emergency, self-care, resurrection, and timing sections use progressive disclosure.
+- Support priority is now resurrection, emergency Main heal, Support self-heal, stable Main heal, MP potion, one due buff, then verified auto-follow.
+- Auto-follow retargets the calibrated Main row when the preceding action targeted Support.
+- Automation configuration schema is now version 4. Existing version 3 pairing, vision calibration, and buff schedules migrate without destructive reset; legacy buffs default to Main.
+- Supported input keys now include `BACKQUOTE` and `ESCAPE` for configurable target deselection.
+
+### Safety
+
+- Optional features are disabled by default and add their calibration requirements to the setup checklist only when enabled.
+- Resurrection never runs without a captured Main death template and never retries indefinitely.
+- Main remains the required foreground client. Background delivery remains restricted to the paired Support client and the CDP `Input` domain.
+
 ## [4.0.2-automation.3] - 2026-07-28
 
 ### Added

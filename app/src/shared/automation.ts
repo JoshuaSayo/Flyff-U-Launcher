@@ -2,13 +2,14 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
-export const AUTOMATION_CONFIG_VERSION = 3 as const;
+export const AUTOMATION_CONFIG_VERSION = 4 as const;
 
 export type AutomationMode = "observer" | "combat" | "support" | "combat_support";
 
 export type SupportBuff = {
     key: string;
     intervalSec: number;
+    target: "main" | "self";
 };
 
 export type AutomationState =
@@ -52,11 +53,30 @@ export type AutomationConfig = {
     supportProfileId: string | null;
     mainPartyHpRoi: NormalizedRect | null;
     mainPartyTargetRoi: NormalizedRect | null;
+    supportSelfHpRoi: NormalizedRect | null;
+    supportMpRoi: NormalizedRect | null;
     supportHealKey: string;
     supportFollowKey: string;
+    supportDeselectKey: string;
     supportHealThreshold: number;
     supportSafeHpThreshold: number;
     supportHealIntervalMs: number;
+    supportEmergencyHealThreshold: number;
+    supportEmergencyHealIntervalMs: number;
+    supportHpStableSamples: number;
+    supportSelfHealEnabled: boolean;
+    supportSelfHealKey: string;
+    supportSelfHealThreshold: number;
+    supportSelfSafeHpThreshold: number;
+    supportSelfHealIntervalMs: number;
+    supportMpPotionEnabled: boolean;
+    supportMpPotionKey: string;
+    supportMpPotionThreshold: number;
+    supportMpPotionCooldownMs: number;
+    supportResurrectionEnabled: boolean;
+    supportResurrectionKey: string;
+    supportResurrectionRetryMs: number;
+    supportResurrectionMaxAttempts: number;
     supportFollowAfterAction: boolean;
     supportFollowIntervalMs: number;
     supportBuffs: SupportBuff[];
@@ -70,6 +90,10 @@ export type AutomationMetrics = {
     targetScore: number | null;
     lootScore: number | null;
     mainPartyHp: number | null;
+    supportHp: number | null;
+    supportMp: number | null;
+    supportEmergency: boolean;
+    supportResurrectionAttempts: number;
     supportProfileId: string | null;
     supportAction: string | null;
     captureMs: number | null;
@@ -116,11 +140,30 @@ export function defaultAutomationConfig(profileId: string): AutomationConfig {
         supportProfileId: null,
         mainPartyHpRoi: null,
         mainPartyTargetRoi: null,
+        supportSelfHpRoi: null,
+        supportMpRoi: null,
         supportHealKey: "4",
         supportFollowKey: "Z",
+        supportDeselectKey: "BACKQUOTE",
         supportHealThreshold: 0.50,
         supportSafeHpThreshold: 0.80,
         supportHealIntervalMs: 1100,
+        supportEmergencyHealThreshold: 0.25,
+        supportEmergencyHealIntervalMs: 300,
+        supportHpStableSamples: 2,
+        supportSelfHealEnabled: false,
+        supportSelfHealKey: "4",
+        supportSelfHealThreshold: 0.35,
+        supportSelfSafeHpThreshold: 0.70,
+        supportSelfHealIntervalMs: 1200,
+        supportMpPotionEnabled: false,
+        supportMpPotionKey: "5",
+        supportMpPotionThreshold: 0.25,
+        supportMpPotionCooldownMs: 15000,
+        supportResurrectionEnabled: false,
+        supportResurrectionKey: "F1",
+        supportResurrectionRetryMs: 4000,
+        supportResurrectionMaxAttempts: 3,
         supportFollowAfterAction: true,
         supportFollowIntervalMs: 5000,
         supportBuffs: [],
@@ -161,7 +204,7 @@ function normalizeSupportTargetRect(value: unknown): NormalizedRect | null {
 function normalizeKey(value: unknown, fallback: string): string {
     if (typeof value !== "string") return fallback;
     const key = value.trim().toUpperCase();
-    return /^(?:[A-Z0-9]|F(?:[1-9]|1[0-2])|SPACE|LEFT|RIGHT|UP|DOWN|TAB)$/.test(key) ? key : fallback;
+    return /^(?:[A-Z0-9]|F(?:[1-9]|1[0-2])|SPACE|LEFT|RIGHT|UP|DOWN|TAB|ESCAPE|BACKQUOTE)$/.test(key) ? key : fallback;
 }
 
 function normalizeSupportBuffs(value: unknown): SupportBuff[] {
@@ -177,6 +220,7 @@ function normalizeSupportBuffs(value: unknown): SupportBuff[] {
         buffs.push({
             key,
             intervalSec: Math.round(finiteNumber(raw.intervalSec, 600, 10, 7200)),
+            target: raw.target === "self" ? "self" : "main",
         });
         if (buffs.length >= 12) break;
     }
@@ -219,11 +263,30 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
             : null,
         mainPartyHpRoi: normalizeBarRect(input.mainPartyHpRoi),
         mainPartyTargetRoi: normalizeSupportTargetRect(input.mainPartyTargetRoi),
+        supportSelfHpRoi: normalizeBarRect(input.supportSelfHpRoi),
+        supportMpRoi: normalizeBarRect(input.supportMpRoi),
         supportHealKey: normalizeKey(input.supportHealKey, defaults.supportHealKey),
         supportFollowKey: normalizeKey(input.supportFollowKey, defaults.supportFollowKey),
+        supportDeselectKey: normalizeKey(input.supportDeselectKey, defaults.supportDeselectKey),
         supportHealThreshold: finiteNumber(input.supportHealThreshold, defaults.supportHealThreshold, 0.05, 0.95),
         supportSafeHpThreshold: finiteNumber(input.supportSafeHpThreshold, defaults.supportSafeHpThreshold, 0.10, 1),
         supportHealIntervalMs: Math.round(finiteNumber(input.supportHealIntervalMs, defaults.supportHealIntervalMs, 500, 5000)),
+        supportEmergencyHealThreshold: finiteNumber(input.supportEmergencyHealThreshold, defaults.supportEmergencyHealThreshold, 0.05, 0.90),
+        supportEmergencyHealIntervalMs: Math.round(finiteNumber(input.supportEmergencyHealIntervalMs, defaults.supportEmergencyHealIntervalMs, 250, 1000)),
+        supportHpStableSamples: Math.round(finiteNumber(input.supportHpStableSamples, defaults.supportHpStableSamples, 1, 5)),
+        supportSelfHealEnabled: input.supportSelfHealEnabled === true,
+        supportSelfHealKey: normalizeKey(input.supportSelfHealKey, defaults.supportSelfHealKey),
+        supportSelfHealThreshold: finiteNumber(input.supportSelfHealThreshold, defaults.supportSelfHealThreshold, 0.05, 0.95),
+        supportSelfSafeHpThreshold: finiteNumber(input.supportSelfSafeHpThreshold, defaults.supportSelfSafeHpThreshold, 0.10, 1),
+        supportSelfHealIntervalMs: Math.round(finiteNumber(input.supportSelfHealIntervalMs, defaults.supportSelfHealIntervalMs, 500, 5000)),
+        supportMpPotionEnabled: input.supportMpPotionEnabled === true,
+        supportMpPotionKey: normalizeKey(input.supportMpPotionKey, defaults.supportMpPotionKey),
+        supportMpPotionThreshold: finiteNumber(input.supportMpPotionThreshold, defaults.supportMpPotionThreshold, 0.05, 0.95),
+        supportMpPotionCooldownMs: Math.round(finiteNumber(input.supportMpPotionCooldownMs, defaults.supportMpPotionCooldownMs, 1000, 120000)),
+        supportResurrectionEnabled: input.supportResurrectionEnabled === true,
+        supportResurrectionKey: normalizeKey(input.supportResurrectionKey, defaults.supportResurrectionKey),
+        supportResurrectionRetryMs: Math.round(finiteNumber(input.supportResurrectionRetryMs, defaults.supportResurrectionRetryMs, 1500, 15000)),
+        supportResurrectionMaxAttempts: Math.round(finiteNumber(input.supportResurrectionMaxAttempts, defaults.supportResurrectionMaxAttempts, 1, 5)),
         supportFollowAfterAction: input.supportFollowAfterAction !== false,
         supportFollowIntervalMs: Math.round(finiteNumber(input.supportFollowIntervalMs, defaults.supportFollowIntervalMs, 1000, 60000)),
         supportBuffs: normalizeSupportBuffs(input.supportBuffs),
@@ -232,6 +295,14 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
     config.supportSafeHpThreshold = Math.max(
         config.supportSafeHpThreshold,
         Math.min(1, config.supportHealThreshold + 0.05),
+    );
+    config.supportEmergencyHealThreshold = Math.min(
+        config.supportEmergencyHealThreshold,
+        Math.max(0.05, config.supportHealThreshold - 0.05),
+    );
+    config.supportSelfSafeHpThreshold = Math.max(
+        config.supportSelfSafeHpThreshold,
+        Math.min(1, config.supportSelfHealThreshold + 0.05),
     );
     return config;
 }

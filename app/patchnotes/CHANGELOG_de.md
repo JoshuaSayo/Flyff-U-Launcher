@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.4
+
+### Geführte Smart-Support-Einrichtung
+
+- Starter-Voreinstellung, modusabhängige Kalibrierung und eine Live-Checkliste im Einrichtungsassistenten hinzugefügt.
+- Priorisierte Notfall-/Normalheilung für Main sowie optionale Selbstheilung, MP-Trank-Nutzung und begrenzte, geprüfte Wiederbelebung hinzugefügt.
+- Buffs können mit `Taste:Sekunden:Ziel` Main oder Support anvisieren; erweiterte und optionale Einstellungen sind standardmäßig eingeklappt.
+- Offizielle API, Plugins, DOM-, Speicher- und Paketdaten bleiben von der Automatisierung getrennt.
+
+Der kürzeste Einrichtungsweg steht in [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.3
 
 ### Gekoppelte Main- und Support-Automatisierung

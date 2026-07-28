@@ -2,6 +2,7 @@
 
 import type { AutomationConfig, AutomationStatus, AutomationTemplateKind, AutomationTemplateState, NormalizedRect } from "../../shared/automation";
 import { clear, el, qs, showToast } from "../dom-utils";
+import { automationSetupChecklist, type SetupCheck } from "./setupAssistant";
 
 type CalibrationKind =
     | "playerHpRoi"
@@ -9,11 +10,16 @@ type CalibrationKind =
     | "targetScanRoi"
     | "mainPartyHpRoi"
     | "mainPartyTargetRoi"
+    | "supportSelfHpRoi"
+    | "supportMpRoi"
     | AutomationTemplateKind;
 type Profile = { id: string; name?: string; characters?: string[] };
 
 const isSupportCalibration = (kind: CalibrationKind | null): boolean =>
-    kind === "mainPartyHpRoi" || kind === "mainPartyTargetRoi";
+    kind === "mainPartyHpRoi"
+    || kind === "mainPartyTargetRoi"
+    || kind === "supportSelfHpRoi"
+    || kind === "supportMpRoi";
 
 const profileLabel = (profile: Profile): string => {
     const name = profile.name?.trim();
@@ -86,11 +92,26 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     const threshold = numericField("Template threshold", 0.45, 0.99, 0.01);
     const tick = numericField("Vision tick (ms)", 250, 2000, 50);
     const action = numericField("Action interval (ms)", 250, 5000, 50);
+    const mainConfigDetails = document.createElement("details");
+    const mainConfigSummary = document.createElement("summary");
+    mainConfigSummary.textContent = "Main combat and vision settings";
+    mainConfigDetails.append(
+        mainConfigSummary,
+        attack.row,
+        heal.row,
+        pickup.row,
+        search.row,
+        healAt.row,
+        safeAt.row,
+        threshold.row,
+        tick.row,
+        action.row,
+    );
     const configPanel = el("section", "automationCard");
     configPanel.append(
         el("h2", "automationCardTitle", "Profile configuration"),
-        modeRow, attack.row, heal.row, pickup.row, search.row,
-        healAt.row, safeAt.row, threshold.row, tick.row, action.row,
+        modeRow,
+        mainConfigDetails,
     );
 
     const supportSelect = document.createElement("select");
@@ -98,47 +119,128 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     supportRow.append(el("span", "automationFieldLabel", "Support client"), supportSelect);
     const supportHeal = textField("Support heal key");
     const supportFollow = textField("Auto-follow key");
+    const supportDeselect = textField("Deselect/self key");
     const supportHealAt = numericField("Heal Main below", 0.05, 0.95, 0.05);
     const supportSafeAt = numericField("Heal Main until", 0.10, 1, 0.05);
     const supportHealInterval = numericField("Heal interval (ms)", 500, 5000, 50);
+    const supportEmergencyAt = numericField("Emergency below", 0.05, 0.90, 0.05);
+    const supportEmergencyInterval = numericField("Emergency interval (ms)", 250, 1000, 50);
+    const supportStableSamples = numericField("Stable low-HP samples", 1, 5, 1);
+    const supportSelfHeal = textField("Self-heal key");
+    const supportSelfHealAt = numericField("Self-heal below", 0.05, 0.95, 0.05);
+    const supportSelfSafeAt = numericField("Self-heal until", 0.10, 1, 0.05);
+    const supportSelfInterval = numericField("Self-heal interval (ms)", 500, 5000, 50);
+    const supportSelfEnabled = document.createElement("input");
+    supportSelfEnabled.type = "checkbox";
+    const supportSelfEnabledRow = el("label", "automationAcknowledge");
+    supportSelfEnabledRow.append(supportSelfEnabled, el("span", "", "Self-heal Support when its own HP is low"));
+    const supportMpPotion = textField("MP potion key");
+    const supportMpAt = numericField("Use MP potion below", 0.05, 0.95, 0.05);
+    const supportMpCooldown = numericField("MP potion cooldown (ms)", 1000, 120000, 500);
+    const supportMpEnabled = document.createElement("input");
+    supportMpEnabled.type = "checkbox";
+    const supportMpEnabledRow = el("label", "automationAcknowledge");
+    supportMpEnabledRow.append(supportMpEnabled, el("span", "", "Use Support MP potion with cooldown protection"));
+    const supportResurrection = textField("Resurrection key");
+    const supportResurrectionRetry = numericField("Resurrection retry (ms)", 1500, 15000, 500);
+    const supportResurrectionAttempts = numericField("Resurrection attempts", 1, 5, 1);
+    const supportResurrectionEnabled = document.createElement("input");
+    supportResurrectionEnabled.type = "checkbox";
+    const supportResurrectionEnabledRow = el("label", "automationAcknowledge");
+    supportResurrectionEnabledRow.append(
+        supportResurrectionEnabled,
+        el("span", "", "Auto-resurrect Main and verify the party HP bar before retrying"),
+    );
     const supportFollowInterval = numericField("Follow interval (ms)", 1000, 60000, 500);
-    const supportBuffs = textField("Buffs key:seconds");
+    const supportBuffs = textField("Buffs key:seconds:target");
     const supportAutoFollow = document.createElement("input");
     supportAutoFollow.type = "checkbox";
     const supportAutoFollowRow = el("label", "automationAcknowledge");
     supportAutoFollowRow.append(supportAutoFollow, el("span", "", "Periodically follow Main and resume follow after support actions"));
+    const emergencyDetails = document.createElement("details");
+    const emergencySummary = document.createElement("summary");
+    emergencySummary.textContent = "Emergency healing and stability";
+    emergencyDetails.append(
+        emergencySummary,
+        supportEmergencyAt.row,
+        supportEmergencyInterval.row,
+        supportStableSamples.row,
+    );
+    const selfCareDetails = document.createElement("details");
+    const selfCareSummary = document.createElement("summary");
+    selfCareSummary.textContent = "Optional Support self-care";
+    selfCareDetails.append(
+        selfCareSummary,
+        supportSelfEnabledRow,
+        supportSelfHeal.row,
+        supportSelfHealAt.row,
+        supportSelfSafeAt.row,
+        supportSelfInterval.row,
+        supportMpEnabledRow,
+        supportMpPotion.row,
+        supportMpAt.row,
+        supportMpCooldown.row,
+    );
+    const resurrectionDetails = document.createElement("details");
+    const resurrectionSummary = document.createElement("summary");
+    resurrectionSummary.textContent = "Optional auto-resurrection";
+    resurrectionDetails.append(
+        resurrectionSummary,
+        supportResurrectionEnabledRow,
+        supportResurrection.row,
+        supportResurrectionRetry.row,
+        supportResurrectionAttempts.row,
+    );
+    const timingDetails = document.createElement("details");
+    const timingSummary = document.createElement("summary");
+    timingSummary.textContent = "Advanced timing";
+    timingDetails.append(
+        timingSummary,
+        supportHealInterval.row,
+        supportFollowInterval.row,
+    );
+    const starterPresetButton = actionButton("Apply Support starter preset", "automationButton primary");
     const supportPanel = el("section", "automationCard");
     supportPanel.append(
         el("h2", "automationCardTitle", "Paired Support"),
-        el("p", "automationShortcut", "Choose the Ringmaster/healer profile. Example buffs: 1:600, 2:600, F3:900"),
+        el("p", "automationShortcut", "Start with the preset and required fields. Open optional sections only after basic healing works."),
+        starterPresetButton,
         supportRow,
         supportHeal.row,
         supportFollow.row,
+        supportDeselect.row,
         supportHealAt.row,
         supportSafeAt.row,
-        supportHealInterval.row,
-        supportFollowInterval.row,
         supportBuffs.row,
         supportAutoFollowRow,
+        emergencyDetails,
+        selfCareDetails,
+        resurrectionDetails,
+        timingDetails,
+        el("p", "automationShortcut", "Buff examples: 1:600:main, F3:900:self"),
     );
 
     const calibrationPanel = el("section", "automationCard");
     calibrationPanel.append(el("h2", "automationCardTitle", "Vision calibration"));
     const calibrationGrid = el("div", "automationCalibrationGrid");
     const calibrationItems: Array<[CalibrationKind, string]> = [
-        ["playerHpRoi", "Player HP region"],
-        ["targetHpRoi", "Target HP region"],
-        ["targetScanRoi", "Target scan area"],
-        ["mainPartyHpRoi", "Main party HP (Support view)"],
-        ["mainPartyTargetRoi", "Main party row (Support view)"],
+        ["playerHpRoi", "Main player HP"],
+        ["targetHpRoi", "Main target HP"],
+        ["targetScanRoi", "Main target scan area"],
+        ["mainPartyHpRoi", "1. Main party HP"],
+        ["mainPartyTargetRoi", "2. Main party row"],
+        ["supportSelfHpRoi", "Support HP (Support view)"],
+        ["supportMpRoi", "Support MP (Support view)"],
         ["target", "Capture target label"],
         ["loot", "Capture loot"],
         ["death", "Capture death dialog"],
     ];
     const templateBadges = new Map<AutomationTemplateKind, HTMLElement>();
+    const calibrationButtons = new Map<CalibrationKind, HTMLButtonElement>();
     let selectedCalibration: CalibrationKind | null = null;
     for (const [kind, label] of calibrationItems) {
         const item = actionButton(label, "automationButton calibration");
+        calibrationButtons.set(kind, item);
         item.dataset.kind = kind;
         item.onclick = () => {
             selectedCalibration = kind;
@@ -182,8 +284,17 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         statusBadge, reason, metrics, acknowledgementRow, controls,
         el("p", "automationShortcut", "Global emergency stop: Ctrl+Shift+F12"),
     );
+    const setupChecklist = el("div", "automationMetrics");
+    const setupNext = el("p", "automationShortcut", "Choose a mode to see required setup.");
+    const setupPanel = el("section", "automationCard");
+    setupPanel.append(
+        el("h2", "automationCardTitle", "Setup assistant"),
+        el("p", "automationShortcut", "Open Main and Support in launcher Grid/Split view before calibrating."),
+        setupChecklist,
+        setupNext,
+    );
     const sidebar = el("aside", "automationSidebar");
-    sidebar.append(sessionPanel, configPanel, supportPanel, calibrationPanel);
+    sidebar.append(sessionPanel, setupPanel, configPanel, supportPanel, calibrationPanel);
     const layout = el("div", "automationLayout");
     layout.append(main, sidebar);
     root.append(header, toolbar, layout);
@@ -201,6 +312,103 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const parsed = Number(input.value);
         return Number.isFinite(parsed) ? parsed : fallback;
     };
+    const combatModeSelected = (): boolean =>
+        modeSelect.value === "combat" || modeSelect.value === "combat_support";
+    const supportModeSelected = (): boolean =>
+        modeSelect.value === "support" || modeSelect.value === "combat_support";
+
+    function setupChecks(): SetupCheck[] {
+        const mode = modeSelect.value === "combat"
+            || modeSelect.value === "support"
+            || modeSelect.value === "combat_support"
+            ? modeSelect.value
+            : "observer";
+        return automationSetupChecklist({
+            mode,
+            mainProfileId: profileId(),
+            supportProfileId: supportSelect.value || null,
+            hasPlayerHp: Boolean(config?.playerHpRoi),
+            hasTargetTemplate: templates.target,
+            hasMainPartyHp: Boolean(config?.mainPartyHpRoi),
+            hasMainPartyRow: Boolean(config?.mainPartyTargetRoi),
+            hasSupportHealKey: supportHeal.input.value.trim().length > 0,
+            selfHealEnabled: supportSelfEnabled.checked,
+            hasSupportHp: Boolean(config?.supportSelfHpRoi),
+            mpPotionEnabled: supportMpEnabled.checked,
+            hasSupportMp: Boolean(config?.supportMpRoi),
+            resurrectionEnabled: supportResurrectionEnabled.checked,
+            hasDeathTemplate: templates.death,
+            acknowledged: acknowledgement.checked,
+        });
+    }
+
+    function updateSetupAssistant(): void {
+        const checks = setupChecks();
+        setupChecklist.replaceChildren(...checks.map((check) =>
+            el("div", "", (check.ready ? "✓ " : "○ ") + check.label)));
+        const missing = checks.filter((check) => !check.ready);
+        setupNext.textContent = missing.length === 0
+            ? modeSelect.value === "observer"
+                ? "Observer is ready. Press Start when the selected game view is visible."
+                : "Ready to start. Keep Main focused and supervise the first actions."
+            : "Next: " + missing[0]!.label + ".";
+        startButton.textContent = modeSelect.value === "support"
+            ? "Start Support"
+            : modeSelect.value === "combat_support"
+                ? "Start Main + Support"
+                : modeSelect.value === "combat"
+                    ? "Start Main combat"
+                    : "Start observer";
+    }
+
+    function setFieldsDisabled(
+        fields: Array<{ input: HTMLInputElement }>,
+        disabled: boolean,
+    ): void {
+        for (const field of fields) field.input.disabled = disabled;
+    }
+
+    function syncGuidedUi(): void {
+        setFieldsDisabled(
+            [supportSelfHeal, supportSelfHealAt, supportSelfSafeAt, supportSelfInterval],
+            !supportSelfEnabled.checked,
+        );
+        setFieldsDisabled(
+            [supportMpPotion, supportMpAt, supportMpCooldown],
+            !supportMpEnabled.checked,
+        );
+        setFieldsDisabled(
+            [supportResurrection, supportResurrectionRetry, supportResurrectionAttempts],
+            !supportResurrectionEnabled.checked,
+        );
+        if (supportSelfEnabled.checked || supportMpEnabled.checked) selfCareDetails.open = true;
+        if (supportResurrectionEnabled.checked) resurrectionDetails.open = true;
+        mainConfigDetails.open = combatModeSelected();
+        supportPanel.hidden = !supportModeSelected();
+        calibrationPanel.hidden = modeSelect.value === "observer";
+        const supportKinds = new Set<CalibrationKind>([
+            "mainPartyHpRoi",
+            "mainPartyTargetRoi",
+            "supportSelfHpRoi",
+            "supportMpRoi",
+            "death",
+        ]);
+        const combatKinds = new Set<CalibrationKind>([
+            "playerHpRoi",
+            "targetHpRoi",
+            "targetScanRoi",
+            "target",
+            "loot",
+            "death",
+        ]);
+        for (const [kind, button] of calibrationButtons) {
+            button.hidden = !(
+                (supportModeSelected() && supportKinds.has(kind))
+                || (combatModeSelected() && combatKinds.has(kind))
+            );
+        }
+        updateSetupAssistant();
+    }
 
     function updateConfigFromFields(): void {
         if (!config) return;
@@ -221,16 +429,37 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         config.supportProfileId = supportSelect.value || null;
         config.supportHealKey = supportHeal.input.value.trim().toUpperCase();
         config.supportFollowKey = supportFollow.input.value.trim().toUpperCase();
+        config.supportDeselectKey = supportDeselect.input.value.trim().toUpperCase();
         config.supportHealThreshold = valueOf(supportHealAt.input, config.supportHealThreshold);
         config.supportSafeHpThreshold = valueOf(supportSafeAt.input, config.supportSafeHpThreshold);
         config.supportHealIntervalMs = valueOf(supportHealInterval.input, config.supportHealIntervalMs);
+        config.supportEmergencyHealThreshold = valueOf(supportEmergencyAt.input, config.supportEmergencyHealThreshold);
+        config.supportEmergencyHealIntervalMs = valueOf(supportEmergencyInterval.input, config.supportEmergencyHealIntervalMs);
+        config.supportHpStableSamples = valueOf(supportStableSamples.input, config.supportHpStableSamples);
+        config.supportSelfHealEnabled = supportSelfEnabled.checked;
+        config.supportSelfHealKey = supportSelfHeal.input.value.trim().toUpperCase();
+        config.supportSelfHealThreshold = valueOf(supportSelfHealAt.input, config.supportSelfHealThreshold);
+        config.supportSelfSafeHpThreshold = valueOf(supportSelfSafeAt.input, config.supportSelfSafeHpThreshold);
+        config.supportSelfHealIntervalMs = valueOf(supportSelfInterval.input, config.supportSelfHealIntervalMs);
+        config.supportMpPotionEnabled = supportMpEnabled.checked;
+        config.supportMpPotionKey = supportMpPotion.input.value.trim().toUpperCase();
+        config.supportMpPotionThreshold = valueOf(supportMpAt.input, config.supportMpPotionThreshold);
+        config.supportMpPotionCooldownMs = valueOf(supportMpCooldown.input, config.supportMpPotionCooldownMs);
+        config.supportResurrectionEnabled = supportResurrectionEnabled.checked;
+        config.supportResurrectionKey = supportResurrection.input.value.trim().toUpperCase();
+        config.supportResurrectionRetryMs = valueOf(supportResurrectionRetry.input, config.supportResurrectionRetryMs);
+        config.supportResurrectionMaxAttempts = valueOf(
+            supportResurrectionAttempts.input,
+            config.supportResurrectionMaxAttempts,
+        );
         config.supportFollowIntervalMs = valueOf(supportFollowInterval.input, config.supportFollowIntervalMs);
         config.supportFollowAfterAction = supportAutoFollow.checked;
         config.supportBuffs = supportBuffs.input.value.split(",").map((entry) => {
-            const [rawKey, rawInterval] = entry.split(":");
+            const [rawKey, rawInterval, rawTarget] = entry.split(":");
             return {
                 key: rawKey?.trim().toUpperCase() ?? "",
                 intervalSec: Number(rawInterval?.trim() ?? "600"),
+                target: rawTarget?.trim().toLowerCase() === "self" ? "self" as const : "main" as const,
             };
         }).filter((buff) => buff.key.length > 0 && Number.isFinite(buff.intervalSec));
     }
@@ -250,12 +479,31 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         supportSelect.value = config.supportProfileId ?? "";
         supportHeal.input.value = config.supportHealKey;
         supportFollow.input.value = config.supportFollowKey;
+        supportDeselect.input.value = config.supportDeselectKey;
         supportHealAt.input.value = String(config.supportHealThreshold);
         supportSafeAt.input.value = String(config.supportSafeHpThreshold);
         supportHealInterval.input.value = String(config.supportHealIntervalMs);
+        supportEmergencyAt.input.value = String(config.supportEmergencyHealThreshold);
+        supportEmergencyInterval.input.value = String(config.supportEmergencyHealIntervalMs);
+        supportStableSamples.input.value = String(config.supportHpStableSamples);
+        supportSelfEnabled.checked = config.supportSelfHealEnabled;
+        supportSelfHeal.input.value = config.supportSelfHealKey;
+        supportSelfHealAt.input.value = String(config.supportSelfHealThreshold);
+        supportSelfSafeAt.input.value = String(config.supportSelfSafeHpThreshold);
+        supportSelfInterval.input.value = String(config.supportSelfHealIntervalMs);
+        supportMpEnabled.checked = config.supportMpPotionEnabled;
+        supportMpPotion.input.value = config.supportMpPotionKey;
+        supportMpAt.input.value = String(config.supportMpPotionThreshold);
+        supportMpCooldown.input.value = String(config.supportMpPotionCooldownMs);
+        supportResurrectionEnabled.checked = config.supportResurrectionEnabled;
+        supportResurrection.input.value = config.supportResurrectionKey;
+        supportResurrectionRetry.input.value = String(config.supportResurrectionRetryMs);
+        supportResurrectionAttempts.input.value = String(config.supportResurrectionMaxAttempts);
         supportFollowInterval.input.value = String(config.supportFollowIntervalMs);
         supportAutoFollow.checked = config.supportFollowAfterAction;
-        supportBuffs.input.value = config.supportBuffs.map((buff) => buff.key + ":" + buff.intervalSec).join(", ");
+        supportBuffs.input.value = config.supportBuffs
+            .map((buff) => buff.key + ":" + buff.intervalSec + ":" + buff.target)
+            .join(", ");
         for (const kind of ["target", "loot", "death"] as const) {
             const badge = templateBadges.get(kind);
             if (!badge) continue;
@@ -263,6 +511,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             badge.classList.toggle("ready", templates[kind]);
         }
         draw();
+        syncGuidedUi();
     }
 
     function strokeRect(ctx: CanvasRenderingContext2D, rect: NormalizedRect, color: string, label: string): void {
@@ -289,6 +538,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         } else if (currentFrameProfileId === config?.supportProfileId) {
             if (config.mainPartyHpRoi) strokeRect(ctx, config.mainPartyHpRoi, "#ef476f", "Main party HP");
             if (config.mainPartyTargetRoi) strokeRect(ctx, config.mainPartyTargetRoi, "#ffd166", "Main party row");
+            if (config.supportSelfHpRoi) strokeRect(ctx, config.supportSelfHpRoi, "#ff8fab", "Support HP");
+            if (config.supportMpRoi) strokeRect(ctx, config.supportMpRoi, "#4cc9f0", "Support MP");
         }
         if (dragStart && dragEnd) {
             const x = Math.min(dragStart.x, dragEnd.x);
@@ -346,10 +597,16 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
                 || kind === "targetHpRoi"
                 || kind === "targetScanRoi"
                 || kind === "mainPartyHpRoi"
-                || kind === "mainPartyTargetRoi") {
-                if ((kind === "playerHpRoi" || kind === "targetHpRoi" || kind === "mainPartyHpRoi")
+                || kind === "mainPartyTargetRoi"
+                || kind === "supportSelfHpRoi"
+                || kind === "supportMpRoi") {
+                if ((kind === "playerHpRoi"
+                    || kind === "targetHpRoi"
+                    || kind === "mainPartyHpRoi"
+                    || kind === "supportSelfHpRoi"
+                    || kind === "supportMpRoi")
                     && (rect.width > 0.60 || rect.height > 0.18 || rect.width * rect.height > 0.06)) {
-                    throw new Error("HP selection is too large; select only the colored interior of the bar");
+                    throw new Error("Bar selection is too large; select only the colored interior");
                 }
                 if (kind === "mainPartyTargetRoi"
                     && (rect.width > 0.70 || rect.height > 0.20 || rect.width * rect.height > 0.10)) {
@@ -418,6 +675,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         metrics.textContent = [
             `HP ${pct(status.metrics.playerHp)}`,
             `Main party ${pct(status.metrics.mainPartyHp)}`,
+            `Support HP ${pct(status.metrics.supportHp)}`,
+            `Support MP ${pct(status.metrics.supportMp)}`,
+            `Emergency ${status.metrics.supportEmergency ? "BURST" : "no"}`,
+            `Res attempts ${status.metrics.supportResurrectionAttempts}`,
             `Target ${pct(status.metrics.targetScore)}`,
             `Loot ${pct(status.metrics.lootScore)}`,
             `Support ${status.metrics.supportAction ?? "—"}`,
@@ -444,12 +705,39 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     profileSelect.onchange = () => {
         void loadProfile(profileId()).catch((error) => showToast(String(error), "error"));
     };
+    modeSelect.onchange = () => {
+        syncGuidedUi();
+    };
     supportSelect.onchange = () => {
         if (config) config.supportProfileId = supportSelect.value || null;
         if (isSupportCalibration(selectedCalibration) && supportSelect.value) {
             void refreshFrame(false, supportSelect.value);
         }
+        updateSetupAssistant();
     };
+    starterPresetButton.onclick = () => {
+        if (!config) return;
+        modeSelect.value = "support";
+        supportHeal.input.value = "4";
+        supportFollow.input.value = "Z";
+        supportDeselect.input.value = "BACKQUOTE";
+        supportHealAt.input.value = "0.5";
+        supportSafeAt.input.value = "0.8";
+        supportHealInterval.input.value = "1100";
+        supportEmergencyAt.input.value = "0.25";
+        supportEmergencyInterval.input.value = "300";
+        supportStableSamples.input.value = "2";
+        supportFollowInterval.input.value = "5000";
+        supportSelfEnabled.checked = false;
+        supportMpEnabled.checked = false;
+        supportResurrectionEnabled.checked = false;
+        supportAutoFollow.checked = true;
+        supportBuffs.input.value = "";
+        updateConfigFromFields();
+        syncGuidedUi();
+        showToast("Starter preset applied. Select Support, then complete calibration steps 1 and 2.", "success");
+    };
+    root.addEventListener("input", () => syncGuidedUi());
     refreshButton.onclick = () => {
         const source = isSupportCalibration(selectedCalibration) ? supportSelect.value : profileId();
         if (!source) return showToast("Choose a Support client first", "error");
@@ -467,6 +755,12 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     startButton.onclick = async () => {
         if (!config) return;
         updateConfigFromFields();
+        const missing = setupChecks().filter((check) => !check.ready);
+        if (missing.length > 0) {
+            updateSetupAssistant();
+            showToast("Setup incomplete: " + missing.map((check) => check.label).join("; "), "error");
+            return;
+        }
         try {
             config = await window.api.automationSaveConfig(profileId(), config);
             applyStatus(await window.api.automationStart(profileId(), acknowledgement.checked));

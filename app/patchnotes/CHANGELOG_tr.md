@@ -1,6 +1,18 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.4
+
+### Yönlendirmeli Smart Support kurulumu
+
+- Başlangıç ayarı, moda göre kalibrasyon ve canlı Kurulum Asistanı kontrol listesi eklendi.
+- Öncelikli acil/normal Main iyileştirme; isteğe bağlı Support öz-iyileştirme, MP iksiri ve sınırlı, doğrulanan diriltme eklendi.
+- Buff'lar `tuş:saniye:hedef` ile Main veya Support'u hedefleyebilir; gelişmiş ve isteğe bağlı ayarlar varsayılan olarak kapalıdır.
+- Resmî API, eklentiler, DOM, bellek ve paket verileri otomasyondan ayrı kalır.
+
+En kısa kurulum için [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) dosyasına bakın.
+
+---
 ## Sürüm 4.0.2-automation.3
 
 ### Eşleştirilmiş Main ve Support otomasyonu

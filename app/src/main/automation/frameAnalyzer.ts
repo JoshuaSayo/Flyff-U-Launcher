@@ -48,8 +48,12 @@ function rgbToHsv(r8: number, g8: number, b8: number): { h: number; s: number; v
     return { h, s: max === 0 ? 0 : delta / max, v: max };
 }
 
-/** Estimate a red/green game bar fill from a configured ROI using HSV structure. */
-export function detectBarFill(frame: PixelFrame, rect: NormalizedRect): number | null {
+/** Estimate a health or mana bar fill from a configured ROI using HSV structure. */
+export function detectBarFill(
+    frame: PixelFrame,
+    rect: NormalizedRect,
+    kind: "health" | "mana" = "health",
+): number | null {
     const roi = toPixelRect(frame, rect);
     const columnActive = new Array<boolean>(roi.width).fill(false);
     for (let x = 0; x < roi.width; x++) {
@@ -59,7 +63,9 @@ export function detectBarFill(frame: PixelFrame, rect: NormalizedRect): number |
             const hsv = rgbToHsv(frame.data[offset] ?? 0, frame.data[offset + 1] ?? 0, frame.data[offset + 2] ?? 0);
             const isRed = hsv.h <= 24 || hsv.h >= 335;
             const isGreen = hsv.h >= 75 && hsv.h <= 165;
-            if ((isRed || isGreen) && hsv.s >= 0.45 && hsv.v >= 0.30) colored++;
+            const isBlue = hsv.h >= 185 && hsv.h <= 250;
+            const acceptedHue = kind === "mana" ? isBlue : isRed || isGreen;
+            if (acceptedHue && hsv.s >= 0.45 && hsv.v >= 0.30) colored++;
         }
         columnActive[x] = colored >= Math.max(1, Math.ceil(roi.height * 0.22));
     }

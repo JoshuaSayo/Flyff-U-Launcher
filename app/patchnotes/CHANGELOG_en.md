@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.4
+
+### Guided Smart Support setup
+
+- Added a starter preset, mode-aware calibration controls, and a live Setup Assistant checklist.
+- Added prioritized emergency/normal Main healing, optional Support self-heal, MP potion, and bounded verified auto-resurrection.
+- Buffs can now target Main or Support with `key:seconds:target`; advanced and optional settings are collapsed by default.
+- Official API, plugins, DOM, memory, and packet data remain isolated from automation.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for the shortest setup path.
+
+---
 ## Version 4.0.2-automation.3
 
 ### Paired Main and Support automation
