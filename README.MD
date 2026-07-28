@@ -38,11 +38,11 @@ Dieser GPL-3.0-Fork basiert auf [GH-Praxa/Flyff-U-Launcher](https://github.com/G
 - Klickt zuerst das Monster an, wartet auf dessen Ziel-HP und startet den Angriff erst nach Erkennung des roten Fadenkreuzes
 - Angriffsfertigkeiten sind optional und standardmäßig deaktiviert; normales Klick-Angreifen funktioniert ohne Skill-Liste
 - Verwendet lokale Struktur-Templates für Ziel, Beute und Tod; offizielle API- und Plugin-Daten sind technisch vom Automatisierungspfad getrennt
-- Pausiert bei Fokusverlust, geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
+- Pausiert, wenn weder Flyff noch die Automation Workbench im Vordergrund ist, bei geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
 - Paart ein Main-Profil mit einem Support-/Ringmaster-Profil für priorisiertes Heilen, Main-/Selbst-Buffs und Auto-Follow
 - Ein Einrichtungsassistent, eine Start-Voreinstellung und eine Live-Checkliste führen durch die zwei Pflicht-Kalibrierungen
 - Optionale Notfallheilung, Support-Selbstheilung, MP-Tränke und Wiederbelebung sind standardmäßig deaktiviert
-- Hintergrund-Eingaben sind auf das ausdrücklich gewählte Support-Profil und die CDP-`Input`-Domäne begrenzt
+- Main- und Support-Eingaben verwenden ausschließlich die CDP-`Input`-Domäne; DevTools und Controller Forward Hold müssen auf beiden Clients geschlossen sein
 - Globaler Not-Aus: `Ctrl+Shift+F12`
 
 Erste Schritte: [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). Technische Sicherheitsgrenzen: [AUTOMATION.md](AUTOMATION.md).
@@ -320,16 +320,16 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Clicks the monster first, waits for its selected target HP, and attacks only after the red combat crosshair is detected
 - Attack skills are optional and disabled by default; normal click-to-attack works with no skill list
 - Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
-- Pauses on focus loss, workbench close, detected death, and every state timeout
+- Pauses when neither Flyff nor the Automation Workbench is in front, when the workbench closes, on detected death, and on every state timeout
 - Pairs an explicit Main profile with a Support/Ringmaster profile for prioritized healing, Main/self buffs, and auto-follow
 - A setup assistant, starter preset, and live checklist guide the two required Support calibrations
 - Optional emergency healing, Support self-heal, MP potion, and bounded resurrection are disabled by default
-- Background input is restricted to the selected Support profile and the CDP `Input` domain
+- Main and paired Support input use only the CDP `Input` domain; DevTools and controller Forward Hold must be closed on those clients
 - Global emergency stop: `Ctrl+Shift+F12`
 
 For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
 
-Version `4.0.2-automation.5` adds click-first monster selection and red-crosshair engagement confirmation. Skill rotation is optional; leave it disabled to use Flyff's normal click-to-attack behavior.
+Version `4.0.2-automation.6` fixes Main click delivery through Chromium Input, permits supervised Workbench focus, migrates the old 82% target threshold to 60%, and clearly reports target and HP gates.
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles

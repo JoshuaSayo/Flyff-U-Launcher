@@ -13,9 +13,11 @@ This is the practical, click-by-click guide for the supervised Vision Automation
 - A stable game resolution, HUD scale, and window layout.
 - Skills assigned to keyboard keys such as `1`, `2`, `3`, and `4`.
 
-The automation can control one foreground Main client and one explicitly paired background Support client. Both must be embedded launcher sessions; external Brave, Chrome, or Edge windows are not supported.
+The automation can control one explicit Main client and one explicitly paired Support client while either Flyff or the Automation Workbench remains in front. Both must be embedded launcher sessions; external Brave, Chrome, or Edge windows are not supported.
 
 > **Required after upgrading to 4.0.2-automation.2:** The old vision regions and templates are cleared once because earlier builds captured the parent launcher background instead of the embedded game. Click **Refresh frame**, confirm you can see the actual Flyff game, and recalibrate the pixel regions and templates below. Your keys, thresholds, and timing settings are preserved.
+
+> **Automatic in 4.0.2-automation.6:** Profiles still using the former default target threshold of `0.82` migrate to `0.60`. Custom thresholds are preserved. Main input now uses Chromium's `Input` domain, and the Workbench itself counts as active supervision.
 
 ## Quick start: Observer mode
 
@@ -64,6 +66,8 @@ Click **Player HP region**, then select only the colored interior of the player'
 - If the selection covers a large panel or much of the screen, the workbench rejects it; select only the bar interior.
 
 Player HP calibration is required before Combat FSM mode can start.
+
+Before combat, run Observer mode while the HUD HP bar is full. Live `HP` should be near 100%. If it reads low—for example 25.2% while the HUD is full—the FSM correctly enters HEALING and never reaches target search. Recalibrate tightly around only the colored fill until the telemetry agrees.
 
 ### Target HP region
 
@@ -124,7 +128,7 @@ Before enabling combat:
 5. Repeat the same check for loot.
 6. Pause and recalibrate any region that behaves incorrectly.
 
-The default template threshold is `0.82`. It is applied to a normalized structural-correlation score. Reduce it only in small steps if the intended image does not match. Raise it if unrelated objects match. Never tune only while the intended target is visible; test absent-target frames too.
+The default target threshold is `0.60`. It is applied to a normalized structural-correlation score, and live status shows `Target score / need`. The demonstrated 65.4% match clears this default. Selection HP plus the red crosshair still verify that the following click actually targeted and engaged a monster. Raise the threshold if unrelated objects match, and always test absent-target frames too.
 
 ## Set up Main and Support
 
@@ -150,7 +154,7 @@ The role selection is stored on the Main automation profile. Main and Support ca
 
 ### Verify basic healing
 
-1. Keep Main in the foreground.
+1. Keep Main or the Automation Workbench in the foreground.
 2. Watch **Main party** in the status metrics. Damage Main manually and confirm the percentage decreases.
 3. When it passes **Heal Main below**, confirm Support clicks Main's calibrated row and uses the heal key.
 4. Confirm healing continues only until **Heal Main until** is reached.
@@ -198,13 +202,13 @@ Support action priority is:
 
 Normal healing requires the configured number of consecutive low-HP samples. Emergency healing reacts immediately below its lower threshold. This helps reject a single noisy HP reading without delaying critical healing.
 
-Do not open DevTools or activate controller **Forward Hold** on the paired Support client while automation is armed. These features use the same Chromium debugger attachment, so automation fails closed instead of competing for input ownership.
+Do not open DevTools or activate controller **Forward Hold** on either automated client while automation is armed. Main and Support input use the same restricted Chromium `Input` mechanism, so automation fails closed instead of competing for an existing debugger attachment.
 
 ## Configure Combat FSM
 
 | Field | Example | Meaning |
 |---|---|---|
-| Mode | Combat FSM | Enables supervised foreground input |
+| Mode | Combat FSM | Enables supervised Chromium input |
 | Use skill keys | Off | Optional; click-to-attack works without skills |
 | Skill rotation (optional) | `1, 2, 3` | Keys cycled only after red-crosshair confirmation |
 | Heal key | `4` | Key used below the heal threshold |
@@ -212,7 +216,7 @@ Do not open DevTools or activate controller **Forward Hold** on the paired Suppo
 | Search/camera key | `RIGHT` | Periodic key used while searching |
 | Heal below | `0.40` | Enter healing below 40% HP |
 | Resume above | `0.75` | Return to attacking above 75% HP |
-| Template threshold | `0.82` | Minimum accepted match score |
+| Target match threshold | `0.60` | Minimum accepted label score before click verification |
 | Vision tick | `500` | Milliseconds between perception cycles |
 | Action interval | `850` | Minimum delay between repeated actions |
 
@@ -229,12 +233,12 @@ Click **Save profile** after changing the settings.
 5. Select **Combat FSM**.
 6. Leave **Use skill keys** off unless you explicitly want a skill rotation.
 7. Click **Save profile**.
-8. Check: **I am supervising the selected foreground client and accept the game-account risk.**
+8. Check: **I am supervising the Main client or this Workbench and accept the game-account risk.**
 9. Click **Start**.
 
-The acknowledged Start action restores and focuses the selected game session before arming input. If the client cannot receive foreground focus, the app refuses to arm.
+The acknowledged Start action restores and initially focuses the selected game session before arming Chromium input. If the client cannot receive initial focus, the app refuses to arm. After Start, you may keep either Flyff or the Automation Workbench in front.
 
-Keep supervising the game. Opening another application or moving focus away from the selected client pauses automation.
+Keep supervising the game. Focusing an unrelated application pauses automation; switching between the selected Flyff window and the Automation Workbench does not.
 
 The target gate is deliberate:
 
@@ -269,7 +273,7 @@ The reason text below the status explains the last transition or safety stop.
 - **Emergency stop** fully stops the session and releases input ownership.
 - `Ctrl+Shift+F12` is the global emergency-stop shortcut.
 - Closing the workbench pauses the session.
-- A detected death pauses the session unless bounded auto-resurrection is enabled. Lost focus or a state timeout always pauses.
+- A detected death pauses the session unless bounded auto-resurrection is enabled. Focus outside Flyff/the Workbench or a state timeout always pauses.
 
 After a pause, correct the cause, return to the workbench, acknowledge supervision, and click **Resume**.
 
@@ -300,6 +304,8 @@ Read the error toast and verify:
 
 Watch the live **Selected** and **Crosshair** values:
 
+- **HP below Heal below** activates the HEALING gate before searching. If the HUD is visibly full but telemetry is low, recalibrate Main player HP.
+- **Target below need** means no click will be sent yet. Version 4.0.2-automation.6 migrates the former 82% default to 60%.
 - **Selected: no** after a click means the selected-monster HP calibration is wrong or the click missed.
 - **Selected: yes / Crosshair: no** means Flyff selected the monster but did not engage combat. The app retries the same point up to its bounded limit.
 - **Crosshair: RED** is the only condition that opens the attacking state.
@@ -316,8 +322,8 @@ Verify:
 - **Main party HP** covers only Main's party HP fill.
 - **Main party row** covers Main's clickable name row.
 - Buff entries use `key:seconds:target`, for example `1:600:main, F3:900:self`.
-- The Main client remains focused.
-- DevTools is closed and controller Forward Hold is disabled for Support.
+- Main or the Automation Workbench remains focused.
+- DevTools is closed and controller Forward Hold is disabled for both automated clients.
 - The status **Main party** value is changing and **Support** shows dispatched actions.
 - Optional self-heal has a calibrated **Support HP** region and a valid metric.
 - Optional MP potion has a calibrated **Support MP** region and a valid metric.
@@ -339,7 +345,7 @@ If the Support preview is blank, place both profiles in Grid/Split view, wait fo
 
 - The workbench operates only on pixels currently rendered by the selected launcher client.
 - Calibration is specific to the profile's resolution and visual layout.
-- One foreground Main and one explicitly paired background Support client can be controlled together.
+- One explicit Main and one explicitly paired Support client can be controlled together while Flyff or the Workbench is the active application.
 - Official API, API Fetch, quest, monster, item, and plugin data are intentionally unavailable to automation.
-- Background Support input uses only the CDP `Input` domain. The app does not evaluate page JavaScript, inspect the game DOM, read process memory or packets, modify the client, or bypass anti-cheat systems.
+- Main and paired Support input use only the CDP `Input` domain. The app does not evaluate page JavaScript, inspect the game DOM, read process memory or packets, modify the client, or bypass anti-cheat systems.
 - Supervision safeguards reduce accidental unattended operation; they do not remove game-account or terms-of-service risk.

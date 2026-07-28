@@ -84,6 +84,11 @@ describe("normalizeAutomationConfig", () => {
         expect(config.attackKeys).toEqual([]);
     });
 
+    it("uses a click-verified target threshold that accepts normal label variation", () => {
+        const config = normalizeAutomationConfig("main", {});
+        expect(config.templateThreshold).toBe(0.60);
+    });
+
     it("normalizes optional attack skill keys only when explicitly enabled", () => {
         const config = normalizeAutomationConfig("main", {
             useAttackSkills: true,

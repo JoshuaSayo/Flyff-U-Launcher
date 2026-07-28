@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { WebContents } from "electron";
 import { AutomationInputFacade } from "./inputFacade";
 
-function supportContents(): {
+function testContents(): {
     webContents: WebContents;
     attach: ReturnType<typeof vi.fn>;
     sendCommand: ReturnType<typeof vi.fn>;
@@ -24,9 +24,52 @@ function supportContents(): {
     return { webContents, attach, sendCommand };
 }
 
-describe("AutomationInputFacade paired support", () => {
+describe("AutomationInputFacade Chromium Input delivery", () => {
+    it("dispatches a complete Main click through CDP without synthetic renderer events", async () => {
+        const main = testContents();
+        const facade = new AutomationInputFacade();
+        facade.claim("main", main.webContents);
+
+        await facade.click("main", 240.4, 160.6);
+
+        expect(main.attach).toHaveBeenCalledWith("1.3");
+        expect(main.sendCommand).toHaveBeenCalledWith("Input.dispatchMouseEvent", expect.objectContaining({
+            type: "mouseMoved",
+            x: 240,
+            y: 161,
+        }));
+        expect(main.sendCommand).toHaveBeenCalledWith("Input.dispatchMouseEvent", expect.objectContaining({
+            type: "mousePressed",
+            button: "left",
+            buttons: 1,
+        }));
+        expect(main.sendCommand).toHaveBeenCalledWith("Input.dispatchMouseEvent", expect.objectContaining({
+            type: "mouseReleased",
+            buttons: 0,
+        }));
+        facade.release();
+    });
+
+    it("dispatches Main keys through CDP", async () => {
+        const main = testContents();
+        const facade = new AutomationInputFacade();
+        facade.claim("main", main.webContents);
+
+        await facade.pressKey("main", "RIGHT");
+
+        expect(main.sendCommand).toHaveBeenNthCalledWith(1, "Input.dispatchKeyEvent", expect.objectContaining({
+            type: "keyDown",
+            code: "ArrowRight",
+        }));
+        expect(main.sendCommand).toHaveBeenNthCalledWith(2, "Input.dispatchKeyEvent", expect.objectContaining({
+            type: "keyUp",
+            code: "ArrowRight",
+        }));
+        facade.release();
+    });
+
     it("dispatches support keys through CDP without requiring foreground focus", async () => {
-        const support = supportContents();
+        const support = testContents();
         const facade = new AutomationInputFacade();
         facade.claimSupport("support", support.webContents);
 
@@ -46,7 +89,7 @@ describe("AutomationInputFacade paired support", () => {
     });
 
     it("dispatches a complete support click through CDP", async () => {
-        const support = supportContents();
+        const support = testContents();
         const facade = new AutomationInputFacade();
         facade.claimSupport("support", support.webContents);
 

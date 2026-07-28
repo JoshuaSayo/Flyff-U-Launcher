@@ -96,4 +96,30 @@ describe("AutomationStore", () => {
             await rm(root, { recursive: true, force: true });
         }
     });
+
+    it("migrates the old default target threshold without overriding a customized value", async () => {
+        const root = await mkdtemp(path.join(tmpdir(), "flyff-automation-store-"));
+        const legacyDir = path.join(root, "legacy");
+        const customDir = path.join(root, "custom");
+        await mkdir(legacyDir, { recursive: true });
+        await mkdir(customDir, { recursive: true });
+        await writeFile(path.join(legacyDir, "config.json"), JSON.stringify({
+            version: 5,
+            profileId: "legacy",
+            templateThreshold: 0.82,
+        }), "utf8");
+        await writeFile(path.join(customDir, "config.json"), JSON.stringify({
+            version: 5,
+            profileId: "custom",
+            templateThreshold: 0.70,
+        }), "utf8");
+
+        try {
+            const store = new AutomationStore(root);
+            expect((await store.load("legacy")).templateThreshold).toBe(0.60);
+            expect((await store.load("custom")).templateThreshold).toBe(0.70);
+        } finally {
+            await rm(root, { recursive: true, force: true });
+        }
+    });
 });

@@ -38,6 +38,7 @@ export type AutomationTarget = {
 export type AutomationServiceOptions = {
     store: AutomationStore;
     resolveTarget: (profileId: string) => AutomationTarget | null;
+    isSupervisionActive?: (target: AutomationTarget) => boolean;
     onStatus?: (status: AutomationStatus) => void;
 };
 
@@ -402,8 +403,11 @@ export class AutomationService {
         try {
             const target = this.options.resolveTarget(profileId);
             if (!target) throw new Error("Selected client was closed");
-            if (config.mode !== "observer" && !target.webContents.isFocused()) {
-                this.pause("Main client focus lost: click the Main client, then resume");
+            const supervisionActive = this.options.isSupervisionActive
+                ? this.options.isSupervisionActive(target)
+                : target.webContents.isFocused();
+            if (config.mode !== "observer" && !supervisionActive) {
+                this.pause("Supervision focus lost: keep the Main client or Automation Workbench in front, then resume");
                 return;
             }
             const supportProfileId = usesSupport(config) ? config.supportProfileId : null;

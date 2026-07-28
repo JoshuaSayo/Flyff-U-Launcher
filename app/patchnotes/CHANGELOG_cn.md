@@ -1,6 +1,18 @@
 # 📦 更新日志
 
 ---
+## 版本 4.0.2-automation.6
+
+### 可靠的 Main 输入与可见的设置门槛
+
+- Main 的点击和按键现在使用 Chromium `Input` 域。
+- Flyff 或 Automation Workbench 可以保持前台；切换到无关应用仍会暂停。
+- 原默认目标阈值从 82% 迁移到 60%，有效的 65.4% 匹配可以进入点击验证。
+- 实时状态会显示所需目标分数，并在错误 HP 读数强制进入 HEALING 时发出警告。
+
+请在两个自动化客户端上关闭 DevTools 和 Controller Forward Hold。
+
+---
 ## 版本 4.0.2-automation.5
 
 ### 先点击再确认怪物目标

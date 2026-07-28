@@ -54,7 +54,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     header.append(
         el("h1", "automationTitle", "Vision Automation Workbench"),
         el("p", "automationSubtitle", "Supervised Main control • paired Support healer/buffer • local pixel analysis"),
-        el("div", "automationSafety", "Background input is limited to the explicitly paired Support client. No memory, packets, DOM inspection, official-API data, or anti-cheat bypass."),
+        el("div", "automationSafety", "Main and paired Support use only Chromium Input. Supervision remains active only while Flyff or this Workbench is in front. No memory, packets, DOM inspection, official-API data, or anti-cheat bypass."),
     );
 
     const profileSelect = document.createElement("select");
@@ -96,7 +96,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     const search = textField("Search/camera key");
     const healAt = numericField("Heal below", 0.05, 0.95, 0.05);
     const safeAt = numericField("Resume above", 0.10, 1, 0.05);
-    const threshold = numericField("Template threshold", 0.45, 0.99, 0.01);
+    const threshold = numericField("Target match threshold", 0.45, 0.99, 0.01);
     const tick = numericField("Vision tick (ms)", 250, 2000, 50);
     const action = numericField("Action interval (ms)", 250, 5000, 50);
     const mainConfigDetails = document.createElement("details");
@@ -230,7 +230,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     );
 
     const calibrationPanel = el("section", "automationCard");
-    calibrationPanel.append(el("h2", "automationCardTitle", "Vision calibration"));
+    calibrationPanel.append(
+        el("h2", "automationCardTitle", "Vision calibration"),
+        el("p", "automationShortcut", "Important: when the in-game HP bar is full, live HP should read near 100%. A low reading forces HEALING and prevents target search; recalibrate tightly around only the colored fill."),
+    );
     const calibrationGrid = el("div", "automationCalibrationGrid");
     const calibrationItems: Array<[CalibrationKind, string]> = [
         ["playerHpRoi", "1. Main player HP"],
@@ -280,7 +283,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     const acknowledgement = document.createElement("input");
     acknowledgement.type = "checkbox";
     const acknowledgementRow = el("label", "automationAcknowledge");
-    acknowledgementRow.append(acknowledgement, el("span", "", "I am supervising the selected foreground client and accept the game-account risk."));
+    acknowledgementRow.append(acknowledgement, el("span", "", "I am supervising the Main client or this Workbench and accept the game-account risk."));
     const startButton = actionButton("Start", "automationButton success");
     const pauseButton = actionButton("Pause");
     const resumeButton = actionButton("Resume");
@@ -362,7 +365,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         setupNext.textContent = missing.length === 0
             ? modeSelect.value === "observer"
                 ? "Observer is ready. Press Start when the selected game view is visible."
-                : "Ready to start. Keep Main focused and supervise the first actions."
+                : "Ready to start. Keep Main or this Workbench in front and supervise the first actions."
             : "Next: " + missing[0]!.label + ".";
         startButton.textContent = modeSelect.value === "support"
             ? "Start Support"
@@ -690,8 +693,13 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         statusBadge.textContent = `${status.state.toUpperCase()}${status.armed ? " • ARMED" : ""}`;
         reason.textContent = status.reason;
         const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
+        const targetScore = status.metrics.targetScore;
+        const requiredTargetScore = config?.templateThreshold ?? 0.60;
+        const targetMatch = targetScore !== null && targetScore >= requiredTargetScore;
+        const hpHealingGate = status.metrics.playerHp !== null
+            && status.metrics.playerHp < (config?.healThreshold ?? 0.40);
         metrics.textContent = [
-            `HP ${pct(status.metrics.playerHp)}`,
+            `HP ${pct(status.metrics.playerHp)}${hpHealingGate ? " HEALING GATE—recalibrate if HUD is full" : ""}`,
             `Target HP ${pct(status.metrics.targetHp)}`,
             `Selected ${status.metrics.targetSelected ? "yes" : "no"}`,
             `Crosshair ${status.metrics.targetEngaged ? "RED" : "no"} ${pct(status.metrics.targetCrosshairScore)}`,
@@ -700,7 +708,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             `Support MP ${pct(status.metrics.supportMp)}`,
             `Emergency ${status.metrics.supportEmergency ? "BURST" : "no"}`,
             `Res attempts ${status.metrics.supportResurrectionAttempts}`,
-            `Target ${pct(status.metrics.targetScore)}`,
+            `Target ${pct(targetScore)} / need ${pct(requiredTargetScore)} ${targetMatch ? "MATCH" : "below"}`,
             `Loot ${pct(status.metrics.lootScore)}`,
             `Support ${status.metrics.supportAction ?? "—"}`,
             `Capture ${status.metrics.captureMs ?? "—"} ms`,

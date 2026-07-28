@@ -1,6 +1,6 @@
 # Supervised Vision Automation
 
-Flyff-U-Automation adds a local, supervised automation workbench to the upstream launcher. It can control one foreground Main client and one explicitly paired background Support client. It does not promise compliance with Flyff Universe rules, and using it may put a game account at risk.
+Flyff-U-Automation adds a local, supervised automation workbench to the upstream launcher. It can control one explicit Main client and one explicitly paired Support client while either Flyff or the hardened Workbench remains in front. It does not promise compliance with Flyff Universe rules, and using it may put a game account at risk.
 
 For a beginner-friendly click-by-click walkthrough, start with [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md).
 
@@ -10,8 +10,7 @@ Automation may use:
 
 - pixels captured directly from the selected embedded game `WebContents` on Windows and macOS, with the platform-safe host capture fallback retained on Linux;
 - locally saved regions of interest and image templates;
-- the Main client's foreground input channel;
-- the CDP `Input` domain for keyboard and mouse delivery to one explicitly paired Support client;
+- the CDP `Input` domain for keyboard and mouse delivery to the explicit Main client and one explicitly paired Support client;
 - per-profile settings stored under the launcher's user-data directory.
 
 Automation does not use:
@@ -20,7 +19,7 @@ Automation does not use:
 - network packets, traffic interception, or protocol emulation;
 - DOM queries, JavaScript evaluation, or CDP Runtime/DOM/Network inspection;
 - official Flyff API data, API Fetch output, plugins, quest data, item data, or monster databases;
-- background control of any client other than the paired Support profile;
+- input delivery to any client other than the explicit Main and paired Support profiles;
 - anti-cheat bypasses or claims of undetectability.
 
 The architectural boundary is enforced by an automated test in `app/src/main/automation/boundary.test.ts`. All emitted automation input is centralized in `app/src/main/automation/inputFacade.ts`.
@@ -66,7 +65,7 @@ Click **Save profile** after changing regions, templates, keys, or thresholds. C
 
 | Setting | Purpose | Default |
 |---|---|---:|
-| Mode | `Observer only` analyzes frames without input; `Combat FSM` may emit foreground input | Observer only |
+| Mode | `Observer only` analyzes frames without input; `Combat FSM` may emit supervised Chromium input | Observer only |
 | Use skill rotation | Opt-in skill keys after the red crosshair is confirmed | Disabled |
 | Skill rotation | Optional comma-separated keys cycled while engaged | 1, 2, 3 |
 | Heal key | Key used below the heal threshold | 4 |
@@ -74,7 +73,7 @@ Click **Save profile** after changing regions, templates, keys, or thresholds. C
 | Search/camera key | Periodic key used while searching | Right |
 | Heal below | Player HP ratio that enters healing | 0.40 |
 | Resume above | Player HP ratio that returns to attacking | 0.75 |
-| Template threshold | Minimum structural-match score | 0.82 |
+| Target match threshold | Minimum structural-match score; selection HP and the red crosshair verify the subsequent click | 0.60 |
 | Vision tick | Delay between perception cycles | 500 ms |
 | Action interval | Minimum interval between repeated actions | 850 ms |
 | Support client | Different live launcher profile containing the healer/buffer | None |
@@ -102,7 +101,7 @@ To use **Combat FSM**:
 2. Capture a small monster-name label and confirm the scan area covers the play field.
 3. Leave **Use skill rotation** off for normal click-to-attack, or enable it and enter skill keys.
 4. Select **Combat FSM** and save the profile.
-5. Focus the selected game client, acknowledge supervision, and click **Start**.
+5. Focus the selected game client, acknowledge supervision, and click **Start**. You may then keep either Flyff or the Automation Workbench in front.
 6. Confirm telemetry changes from **Selected yes** to **Crosshair RED** before the state becomes **ATTACKING**.
 
 The targeting sequence is deliberately gated:
@@ -115,7 +114,7 @@ The targeting sequence is deliberately gated:
 
 Selection clicks are limited to three per approach attempt. Failure to obtain the target HP bar or red crosshair returns the FSM to searching after the approach timeout.
 
-Combat mode pauses when the client loses focus. It also pauses when the workbench closes, a death template matches, or a state exceeds its safety timeout. After correcting the cause, refocus the game client, acknowledge supervision again, and click **Resume**.
+Combat mode pauses when neither the selected Flyff window nor the Automation Workbench has application focus. It also pauses when the workbench closes, a death template matches, or a state exceeds its safety timeout. After correcting the cause, return to Flyff or the Workbench, acknowledge supervision again, and click **Resume**.
 
 To use paired Support with the shortest safe setup:
 
@@ -138,7 +137,7 @@ Support action priority is:
 6. One due Main- or self-targeted buff.
 7. Periodic auto-follow.
 
-Each buff has its own next-due timestamp. Normal healing requires consecutive low readings and remains active until the safe threshold is reached; emergency healing reacts immediately. The Main client must stay focused, and Support input is delivered in the background only to the paired profile.
+Each buff has its own next-due timestamp. Normal healing requires consecutive low readings and remains active until the safe threshold is reached; emergency healing reacts immediately. The Main client or Automation Workbench must remain in front, and input is delivered only to the selected Main and paired Support profiles.
 
 Use **Emergency stop** for a normal immediate stop, or press the global shortcut `Ctrl+Shift+F12` even when another window is active. Stop and pause both release all keys and mouse buttons tracked by the input facade.
 
@@ -172,6 +171,7 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Select only the interior colored fill of the bar.
 - Avoid the frame, numbers, icons, shadows, and overlapping effects.
 - Recalibrate after changing resolution, HUD scale, theme, or layout.
+- When the HUD is full, live `HP` must read near 100%. A low reading activates the HEALING gate before target search; the Workbench now labels this condition explicitly.
 - For `Main party` telemetry, ensure the preview says **Support view** and select the Main's party HP bar—not Support's own HP.
 
 ### Support does not heal or buff
@@ -181,7 +181,7 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Confirm the Support preview shows the Ringmaster/healer client.
 - Recalibrate both **Main party HP** and **Main party row** from the Support view.
 - Use `key:seconds:target` buff entries, for example `1:600:main, 2:600:main, F3:900:self`.
-- Close DevTools and disable controller Forward Hold for this Support profile; those features cannot share the same debugger attachment.
+- Close DevTools and disable controller Forward Hold for both automated profiles; those features cannot share the Chromium input attachment.
 - Read **Main party**, **Support HP**, **Support MP**, and **Support** in the status metrics to see perceived values and the last dispatched action.
 - If self-heal or MP potion is enabled, calibrate the matching Support bar and verify its metric before arming.
 - Auto-resurrection requires a reliable death template. It pauses after the configured attempt limit if Main HP is not restored.
@@ -190,7 +190,7 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 
 - Capture a smaller, visually distinctive structure.
 - Keep the template inside the target scan area.
-- Start with the default threshold, then reduce it in small steps while observing false matches.
+- Start with the 0.60 default threshold. Live status shows `Target score / need`; raise it only if absent-target frames produce false matches.
 - Re-capture after a UI-scale or resolution change.
 
 ### Monster is selected but combat does not begin

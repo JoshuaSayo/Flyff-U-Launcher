@@ -2,6 +2,25 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.6] - 2026-07-28
+
+### Fixed
+
+- Main mouse clicks and key presses now use Chromium's low-level CDP `Input` domain instead of Electron renderer `sendInputEvent`, matching the reliable delivery path already used by the paired Support client.
+- The Automation Workbench counts as valid supervision focus. Switching from Flyff to the Workbench no longer races into `FAULTED`; switching to an unrelated application still pauses.
+- Profiles saved with the former default target threshold of `0.82` migrate to `0.60`. The user's demonstrated `65.4%` monster-label match now clears the gate, while selected-target HP and red-crosshair confirmation still verify the click.
+- Live status now shows the target score beside the required score and flags a player-HP healing gate. This exposes incorrect calibration such as the demonstrated `25.2%` reading while the HUD is full.
+
+### Changed
+
+- Configuration schema is now version 6. Custom target thresholds are preserved.
+- DevTools and controller Forward Hold must be closed on both automated clients because they share Chromium's debugger attachment.
+
+### Safety
+
+- CDP access remains confined to `inputFacade.ts` and the `Input` domain. The implementation does not evaluate JavaScript or inspect the DOM, network, memory, packets, official API, or plugins.
+- Main input remains supervised: either the selected Flyff client or the hardened Automation Workbench must be the active application window.
+
 ## [4.0.2-automation.5] - 2026-07-28
 
 ### Added

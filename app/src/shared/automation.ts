@@ -2,7 +2,7 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
-export const AUTOMATION_CONFIG_VERSION = 5 as const;
+export const AUTOMATION_CONFIG_VERSION = 6 as const;
 
 export type AutomationMode = "observer" | "combat" | "support" | "combat_support";
 
@@ -131,7 +131,7 @@ export function defaultAutomationConfig(profileId: string): AutomationConfig {
         targetScanRoi: { x: 0.08, y: 0.08, width: 0.84, height: 0.62 },
         healThreshold: 0.40,
         safeHpThreshold: 0.75,
-        templateThreshold: 0.82,
+        templateThreshold: 0.60,
         useAttackSkills: false,
         attackKeys: ["1", "2", "3"],
         healKey: "4",

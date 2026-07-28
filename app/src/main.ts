@@ -297,6 +297,12 @@ app.whenReady().then(async () => {
     const automationService = new AutomationService({
         store: new AutomationStore(path.join(userData, "automation")),
         resolveTarget: resolveAutomationTarget,
+        isSupervisionActive: (target) => {
+            const workbench = automationWindow.get();
+            return target.webContents.isFocused()
+                || target.hostWindow.isFocused()
+                || Boolean(workbench && !workbench.isDestroyed() && workbench.isFocused());
+        },
         onStatus: (status) => {
             const win = automationWindow.get();
             if (win && !win.isDestroyed()) win.webContents.send("automation:statusChanged", status);

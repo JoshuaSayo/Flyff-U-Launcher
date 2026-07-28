@@ -32,7 +32,7 @@ describe("automation architectural boundary", () => {
         }
     });
 
-    it("uses only the CDP Input domain for paired Support delivery", () => {
+    it("uses only the CDP Input domain for Main and paired Support delivery", () => {
         const file = files.find((candidate) => candidate.endsWith("inputFacade.ts"));
         expect(file).toBeDefined();
         const source = readFileSync(file!, "utf8");

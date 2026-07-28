@@ -1,6 +1,18 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.6
+
+### Entrée Main fiable et seuils visibles
+
+- Les clics et touches Main utilisent maintenant le domaine `Input` de Chromium.
+- Flyff ou l'Automation Workbench peut rester au premier plan ; une autre application met toujours en pause.
+- L'ancien seuil cible par défaut de 82 % passe à 60 %, permettant à une correspondance valide de 65,4 % d'atteindre la vérification du clic.
+- Le statut affiche le score requis et avertit quand des PV mal calibrés forcent l'état HEALING.
+
+Fermez DevTools et Controller Forward Hold sur les deux clients automatisés.
+
+---
 ## Version 4.0.2-automation.5
 
 ### Ciblage des monstres par clic

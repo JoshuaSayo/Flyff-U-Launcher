@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.6
+
+### Niezawodne sterowanie Main i widoczne blokady konfiguracji
+
+- Kliknięcia i klawisze Main korzystają teraz z domeny Chromium `Input`.
+- Na pierwszym planie może pozostać Flyff lub Automation Workbench; obca aplikacja nadal wstrzymuje działanie.
+- Poprzedni domyślny próg celu 82% migruje do 60%, więc poprawne dopasowanie 65,4% przechodzi do weryfikacji kliknięcia.
+- Status pokazuje wymagany wynik i ostrzega, gdy błędny odczyt HP wymusza stan HEALING.
+
+Zamknij DevTools i Controller Forward Hold na obu automatyzowanych klientach.
+
+---
 ## Wersja 4.0.2-automation.5
 
 ### Wybór potwora przez kliknięcie

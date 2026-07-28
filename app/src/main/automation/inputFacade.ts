@@ -55,19 +55,30 @@ export class AutomationInputFacade {
     }
 
     release(): void {
+        const releases: Array<Promise<void>> = [];
+        const detachTargets = new Set<WebContents>();
         const wc = this.owner?.webContents;
-        if (wc && !wc.isDestroyed()) {
+        if (wc && !wc.isDestroyed() && this.cdpOwned.has(wc)) {
             for (const keyCode of this.heldKeys) {
-                try { wc.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* closing */ }
+                releases.push(this.sendCdpKey(wc, "keyUp", keyCode, "Main").catch((): void => undefined));
             }
             if (this.heldMouse) {
-                try { wc.sendInputEvent({ type: "mouseUp", x: this.heldMouse.x, y: this.heldMouse.y, button: "left", clickCount: 1 }); } catch { /* closing */ }
+                releases.push(wc.debugger.sendCommand("Input.dispatchMouseEvent", {
+                    type: "mouseReleased",
+                    x: this.heldMouse.x,
+                    y: this.heldMouse.y,
+                    button: "left",
+                    buttons: 0,
+                    clickCount: 1,
+                }).then((): void => undefined).catch((): void => undefined));
             }
+            detachTargets.add(wc);
         }
         const support = this.supportOwner?.webContents;
         if (support && !support.isDestroyed() && this.cdpOwned.has(support)) {
-            const releases = [...this.supportHeldKeys].map((keyCode) =>
-                this.sendCdpKey(support, "keyUp", keyCode).catch((): void => undefined));
+            for (const keyCode of this.supportHeldKeys) {
+                releases.push(this.sendCdpKey(support, "keyUp", keyCode, "Support").catch((): void => undefined));
+            }
             if (this.supportMouse) {
                 releases.push(support.debugger.sendCommand("Input.dispatchMouseEvent", {
                     type: "mouseReleased",
@@ -78,13 +89,16 @@ export class AutomationInputFacade {
                     clickCount: 1,
                 }).then((): void => undefined).catch((): void => undefined));
             }
-            void Promise.all(releases).finally(() => {
-                if (!support.isDestroyed() && this.cdpOwned.has(support) && support.debugger.isAttached()) {
-                    try { support.debugger.detach(); } catch { /* closing */ }
-                }
-                this.cdpOwned.delete(support);
-            });
+            detachTargets.add(support);
         }
+        void Promise.all(releases).finally(() => {
+            for (const contents of detachTargets) {
+                if (!contents.isDestroyed() && this.cdpOwned.has(contents) && contents.debugger.isAttached()) {
+                    try { contents.debugger.detach(); } catch { /* closing */ }
+                }
+                this.cdpOwned.delete(contents);
+            }
+        });
         this.heldKeys.clear();
         this.supportHeldKeys.clear();
         this.heldMouse = null;
@@ -98,7 +112,6 @@ export class AutomationInputFacade {
         if (!this.owner || this.owner.profileId !== profileId) throw new Error("Automation does not own this profile");
         const wc = this.owner.webContents;
         if (wc.isDestroyed()) throw new Error("Selected client was closed");
-        if (!wc.isFocused()) throw new Error("Selected client must remain in the foreground");
         return { webContents: wc, generation: this.generation };
     }
 
@@ -111,10 +124,10 @@ export class AutomationInputFacade {
         return { webContents: wc, generation: this.generation };
     }
 
-    private ensureCdp(webContents: WebContents): void {
+    private ensureCdp(webContents: WebContents, ownerLabel: "Main" | "Support"): void {
         if (this.cdpOwned.has(webContents) && webContents.debugger.isAttached()) return;
         if (webContents.debugger.isAttached()) {
-            throw new Error("Support client debugger is already in use; close DevTools and disable controller Forward Hold");
+            throw new Error(ownerLabel + " client Chromium input channel is already in use; close DevTools and disable controller Forward Hold");
         }
         webContents.debugger.attach("1.3");
         this.cdpOwned.add(webContents);
@@ -122,10 +135,15 @@ export class AutomationInputFacade {
         webContents.debugger.once("detach", () => this.cdpOwned.delete(webContents));
     }
 
-    private async sendCdpKey(webContents: WebContents, type: "keyDown" | "keyUp", keyCode: string): Promise<void> {
-        this.ensureCdp(webContents);
+    private async sendCdpKey(
+        webContents: WebContents,
+        type: "keyDown" | "keyUp",
+        keyCode: string,
+        ownerLabel: "Main" | "Support",
+    ): Promise<void> {
+        this.ensureCdp(webContents, ownerLabel);
         const info = cdpKeyInfo(keyCode);
-        if (!info) throw new Error("Unsupported support key " + keyCode);
+        if (!info) throw new Error("Unsupported " + ownerLabel + " key " + keyCode);
         await webContents.debugger.sendCommand("Input.dispatchKeyEvent", {
             type,
             key: info.key,
@@ -137,45 +155,66 @@ export class AutomationInputFacade {
 
     async pressKey(profileId: string, keyCode: string): Promise<void> {
         const { webContents, generation } = this.requireOwner(profileId);
-        webContents.sendInputEvent({ type: "keyDown", keyCode });
+        await this.sendCdpKey(webContents, "keyDown", keyCode, "Main");
         this.heldKeys.add(keyCode);
         await delay(randomInt(55, 96));
         if (this.owner?.webContents === webContents && this.generation === generation && !webContents.isDestroyed()) {
-            webContents.sendInputEvent({ type: "keyUp", keyCode });
+            await this.sendCdpKey(webContents, "keyUp", keyCode, "Main");
             this.heldKeys.delete(keyCode);
         }
     }
 
     async click(profileId: string, x: number, y: number): Promise<void> {
         const { webContents, generation } = this.requireOwner(profileId);
+        this.ensureCdp(webContents, "Main");
         const px = Math.max(0, Math.round(x));
         const py = Math.max(0, Math.round(y));
-        webContents.sendInputEvent({ type: "mouseMove", x: px, y: py });
+        await webContents.debugger.sendCommand("Input.dispatchMouseEvent", {
+            type: "mouseMoved",
+            x: px,
+            y: py,
+            button: "none",
+            buttons: 0,
+        });
         await delay(randomInt(35, 76));
         if (this.generation !== generation) return;
-        webContents.sendInputEvent({ type: "mouseDown", x: px, y: py, button: "left", clickCount: 1 });
+        await webContents.debugger.sendCommand("Input.dispatchMouseEvent", {
+            type: "mousePressed",
+            x: px,
+            y: py,
+            button: "left",
+            buttons: 1,
+            clickCount: 1,
+        });
         this.heldMouse = { x: px, y: py };
         await delay(randomInt(55, 106));
         if (this.owner?.webContents === webContents && this.generation === generation && !webContents.isDestroyed()) {
-            webContents.sendInputEvent({ type: "mouseUp", x: px, y: py, button: "left", clickCount: 1 });
+            await webContents.debugger.sendCommand("Input.dispatchMouseEvent", {
+                type: "mouseReleased",
+                x: px,
+                y: py,
+                button: "left",
+                buttons: 0,
+                clickCount: 1,
+            });
             this.heldMouse = null;
         }
     }
 
     async pressSupportKey(profileId: string, keyCode: string): Promise<void> {
         const { webContents, generation } = this.requireSupport(profileId);
-        await this.sendCdpKey(webContents, "keyDown", keyCode);
+        await this.sendCdpKey(webContents, "keyDown", keyCode, "Support");
         this.supportHeldKeys.add(keyCode);
         await delay(randomInt(55, 96));
         if (this.supportOwner?.webContents === webContents && this.generation === generation && !webContents.isDestroyed()) {
-            await this.sendCdpKey(webContents, "keyUp", keyCode);
+            await this.sendCdpKey(webContents, "keyUp", keyCode, "Support");
             this.supportHeldKeys.delete(keyCode);
         }
     }
 
     async clickSupport(profileId: string, x: number, y: number): Promise<void> {
         const { webContents, generation } = this.requireSupport(profileId);
-        this.ensureCdp(webContents);
+        this.ensureCdp(webContents, "Support");
         const px = Math.max(0, Math.round(x));
         const py = Math.max(0, Math.round(y));
         await webContents.debugger.sendCommand("Input.dispatchMouseEvent", {

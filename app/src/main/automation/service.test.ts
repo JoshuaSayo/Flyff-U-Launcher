@@ -15,6 +15,7 @@ function combatStore(): AutomationStore {
     return {
         load: vi.fn(async () => config),
         templateState: vi.fn(async () => ({ target: true, loot: false, death: false })),
+        templatePath: vi.fn((_profileId: string, kind: string) => "missing-" + kind + ".png"),
     } as unknown as AutomationStore;
 }
 
@@ -152,6 +153,28 @@ describe("AutomationService combat arming", () => {
         service.stop();
     });
 
+    it("continues while the Automation Workbench provides supervision focus", async () => {
+        const selected = target(true);
+        const png = await testFrame(120, 80, []);
+        selected.capturePage.mockResolvedValue(capturedImage(png));
+        const supervisionActive = vi.fn(() => true);
+        const service = new AutomationService({
+            store: combatStore(),
+            resolveTarget: () => selected.value,
+            isSupervisionActive: supervisionActive,
+        });
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => expect(supervisionActive).toHaveBeenCalled(), { timeout: 1500 });
+        expect(service.status().state).not.toBe("paused");
+        expect(service.status().state).not.toBe("faulted");
+
+        supervisionActive.mockReturnValue(false);
+        await vi.waitFor(() => expect(service.status().state).toBe("paused"), { timeout: 1500 });
+        expect(service.status().reason).toContain("Supervision focus lost");
+        service.stop();
+    });
+
     it("clicks to select and engage before attacking without optional skill keys", async () => {
         const selected = target(true);
         const png = await testFrame(120, 80, []);
@@ -214,9 +237,13 @@ describe("AutomationService combat arming", () => {
             expect(service.status().state).toBe("attacking");
         }, { timeout: 2500 });
 
-        const events = selected.sendInputEvent.mock.calls.map(([event]) => event as { type?: string });
-        expect(events.filter((event) => event.type === "mouseDown").length).toBeGreaterThanOrEqual(2);
-        expect(events.some((event) => event.type === "keyDown")).toBe(false);
+        const mouseEvents = selected.debuggerSendCommand.mock.calls
+            .filter(([method]) => method === "Input.dispatchMouseEvent")
+            .map(([, event]) => event as { type?: string });
+        const keyEvents = selected.debuggerSendCommand.mock.calls
+            .filter(([method]) => method === "Input.dispatchKeyEvent");
+        expect(mouseEvents.filter((event) => event.type === "mousePressed").length).toBeGreaterThanOrEqual(2);
+        expect(keyEvents).toHaveLength(0);
         expect(service.status().metrics.targetSelected).toBe(true);
         expect(service.status().metrics.targetEngaged).toBe(true);
         service.stop();

@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.6
+
+### Reliable Main input and visible setup gates
+
+- Main clicks and keys now use Chromium's low-level `Input` domain.
+- Flyff or the Automation Workbench may remain in front; unrelated application focus still pauses.
+- The former 82% default target threshold migrates to 60%, so a 65.4% valid label match proceeds to click verification.
+- Live status now exposes the required target score and warns when inaccurate player HP forces the HEALING gate.
+
+Close DevTools and controller Forward Hold on both automated clients.
+
+---
 ## Version 4.0.2-automation.5
 
 ### Click-first monster targeting

@@ -33,9 +33,17 @@ export class AutomationStore {
                 const defaults = defaultAutomationConfig(profileId);
                 const previousVersion = raw && typeof raw === "object" ? Number((raw as { version?: unknown }).version) : 0;
                 const clearStaleCapture = previousVersion < 2;
+                const previousThreshold = raw && typeof raw === "object"
+                    ? Number((raw as { templateThreshold?: unknown }).templateThreshold)
+                    : Number.NaN;
+                const migrateLegacyDefaultThreshold = previousVersion < 6
+                    && (!Number.isFinite(previousThreshold) || previousThreshold === 0.82);
                 const migrated = normalizeAutomationConfig(profileId, {
                     ...(raw && typeof raw === "object" ? raw : {}),
                     version: AUTOMATION_CONFIG_VERSION,
+                    ...(migrateLegacyDefaultThreshold ? {
+                        templateThreshold: defaults.templateThreshold,
+                    } : {}),
                     ...(clearStaleCapture ? {
                         playerHpRoi: null,
                         targetHpRoi: null,

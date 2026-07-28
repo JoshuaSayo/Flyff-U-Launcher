@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.6
+
+### Zuverlässige Main-Eingabe und sichtbare Einrichtungsgrenzen
+
+- Main-Klicks und -Tasten verwenden jetzt Chromiums `Input`-Domäne.
+- Flyff oder die Automation Workbench darf im Vordergrund bleiben; eine fremde Anwendung pausiert weiterhin.
+- Der frühere Standard-Zielwert von 82 % wird auf 60 % migriert, sodass ein gültiger Treffer mit 65,4 % zur Klickprüfung gelangt.
+- Der Live-Status zeigt den benötigten Zielwert und warnt, wenn falsche Spieler-HP den HEALING-Zustand erzwingen.
+
+DevTools und Controller Forward Hold müssen auf beiden automatisierten Clients geschlossen sein.
+
+---
 ## Version 4.0.2-automation.5
 
 ### Monster zuerst per Klick anvisieren

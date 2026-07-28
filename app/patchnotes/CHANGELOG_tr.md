@@ -1,6 +1,18 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.6
+
+### Güvenilir Main girişi ve görünür kurulum eşikleri
+
+- Main tıklamaları ve tuşları artık Chromium `Input` alanını kullanır.
+- Flyff veya Automation Workbench önde kalabilir; ilgisiz bir uygulama hâlâ otomasyonu duraklatır.
+- Önceki varsayılan %82 hedef eşiği %60'a taşınır; geçerli %65,4 eşleşme tıklama doğrulamasına geçer.
+- Canlı durum, gerekli hedef puanını gösterir ve hatalı HP okuması HEALING durumunu zorladığında uyarır.
+
+Her iki otomatik istemcide DevTools ve Controller Forward Hold'u kapatın.
+
+---
 ## Sürüm 4.0.2-automation.5
 
 ### Önce tıklayarak canavar hedefleme
