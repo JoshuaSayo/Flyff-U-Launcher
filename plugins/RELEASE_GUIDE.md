@@ -8,7 +8,7 @@ Flyff-U-Automation verwendet einen vom Upstream getrennten Update-Kanal unter `J
 
 ```bash
 # In app/package.json die Version erhöhen
-"version": "4.0.2-automation.2"  # Beispiel
+"version": "4.0.2-automation.3"  # Beispiel
 ```
 
 ### 2. Änderungen committen
@@ -21,9 +21,9 @@ git commit -m "Beschreibung der Änderungen"
 ### 3. Git Tag erstellen und pushen
 
 ```bash
-git tag v4.0.2-automation.2
+git tag v4.0.2-automation.3
 git push origin <branch>
-git push origin v4.0.2-automation.2
+git push origin v4.0.2-automation.3
 ```
 
 ### 4. GitHub Actions abwarten
@@ -35,14 +35,14 @@ git push origin v4.0.2-automation.2
 ### 5. Release veröffentlichen
 
 1. Gehe zu https://github.com/JoshuaSayo/Flyff-U-Launcher/releases
-2. Finde das Draft-Release (z. B. v4.0.2-automation.2)
+2. Finde das Draft-Release (z. B. v4.0.2-automation.3)
 3. Klicke auf "Edit"
 4. Füge Release Notes hinzu (optional)
 5. Klicke auf "Publish release"
 
 ## Wichtige Hinweise
 
-- **Tag-Format**: Muss mit `v` beginnen (z. B. `v4.0.2-automation.2`)
+- **Tag-Format**: Muss mit `v` beginnen (z. B. `v4.0.2-automation.3`)
 - **Draft-Release**: Wird von GitHub Actions erstellt, muss manuell veröffentlicht werden
 - **latest.yml**: Wird automatisch generiert und enthält SHA512-Hash für sichere Updates
 - **Release-Gate**: Vor dem Tag müssen Typecheck, Tests, Automation-Lint, Produktions-Audit und Packaging erfolgreich sein; siehe `AUTOMATION.md`

@@ -3,8 +3,24 @@
 import type { AutomationConfig, AutomationStatus, AutomationTemplateKind, AutomationTemplateState, NormalizedRect } from "../../shared/automation";
 import { clear, el, qs, showToast } from "../dom-utils";
 
-type CalibrationKind = "playerHpRoi" | "targetHpRoi" | "targetScanRoi" | AutomationTemplateKind;
+type CalibrationKind =
+    | "playerHpRoi"
+    | "targetHpRoi"
+    | "targetScanRoi"
+    | "mainPartyHpRoi"
+    | "mainPartyTargetRoi"
+    | AutomationTemplateKind;
 type Profile = { id: string; name?: string; characters?: string[] };
+
+const isSupportCalibration = (kind: CalibrationKind | null): boolean =>
+    kind === "mainPartyHpRoi" || kind === "mainPartyTargetRoi";
+
+const profileLabel = (profile: Profile): string => {
+    const name = profile.name?.trim();
+    const character = profile.characters?.[0]?.trim();
+    if (name && character && name !== character) return name + " — " + character;
+    return name || character || profile.id;
+};
 
 const actionButton = (label: string, classes = "automationButton"): HTMLButtonElement =>
     el("button", classes, label) as HTMLButtonElement;
@@ -31,8 +47,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     const header = el("header", "automationHeader");
     header.append(
         el("h1", "automationTitle", "Vision Automation Workbench"),
-        el("p", "automationSubtitle", "Supervised foreground control • direct game-surface capture • local pixel analysis"),
-        el("div", "automationSafety", "No memory access, packets, DOM inspection, official-API data, background control, or anti-cheat bypass."),
+        el("p", "automationSubtitle", "Supervised Main control • paired Support healer/buffer • local pixel analysis"),
+        el("div", "automationSafety", "Background input is limited to the explicitly paired Support client. No memory, packets, DOM inspection, official-API data, or anti-cheat bypass."),
     );
 
     const profileSelect = document.createElement("select");
@@ -40,7 +56,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     const refreshButton = actionButton("Refresh frame");
     const saveButton = actionButton("Save profile", "automationButton primary");
     const toolbar = el("div", "automationToolbar");
-    toolbar.append(el("span", "automationProfileLabel", "Client profile"), profileSelect, refreshButton, saveButton);
+    toolbar.append(el("span", "automationProfileLabel", "Main profile"), profileSelect, refreshButton, saveButton);
 
     const canvas = document.createElement("canvas");
     canvas.className = "automationCanvas";
@@ -53,7 +69,12 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     main.append(canvasWrap);
 
     const modeSelect = document.createElement("select");
-    modeSelect.append(new Option("Observer only", "observer"), new Option("Combat FSM", "combat"));
+    modeSelect.append(
+        new Option("Observer only", "observer"),
+        new Option("Combat FSM", "combat"),
+        new Option("Support healer/buffer", "support"),
+        new Option("Combat + Support", "combat_support"),
+    );
     const modeRow = el("label", "automationField");
     modeRow.append(el("span", "automationFieldLabel", "Mode"), modeSelect);
     const attack = textField("Attack rotation");
@@ -72,6 +93,35 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         healAt.row, safeAt.row, threshold.row, tick.row, action.row,
     );
 
+    const supportSelect = document.createElement("select");
+    const supportRow = el("label", "automationField");
+    supportRow.append(el("span", "automationFieldLabel", "Support client"), supportSelect);
+    const supportHeal = textField("Support heal key");
+    const supportFollow = textField("Auto-follow key");
+    const supportHealAt = numericField("Heal Main below", 0.05, 0.95, 0.05);
+    const supportSafeAt = numericField("Heal Main until", 0.10, 1, 0.05);
+    const supportHealInterval = numericField("Heal interval (ms)", 500, 5000, 50);
+    const supportFollowInterval = numericField("Follow interval (ms)", 1000, 60000, 500);
+    const supportBuffs = textField("Buffs key:seconds");
+    const supportAutoFollow = document.createElement("input");
+    supportAutoFollow.type = "checkbox";
+    const supportAutoFollowRow = el("label", "automationAcknowledge");
+    supportAutoFollowRow.append(supportAutoFollow, el("span", "", "Periodically follow Main and resume follow after support actions"));
+    const supportPanel = el("section", "automationCard");
+    supportPanel.append(
+        el("h2", "automationCardTitle", "Paired Support"),
+        el("p", "automationShortcut", "Choose the Ringmaster/healer profile. Example buffs: 1:600, 2:600, F3:900"),
+        supportRow,
+        supportHeal.row,
+        supportFollow.row,
+        supportHealAt.row,
+        supportSafeAt.row,
+        supportHealInterval.row,
+        supportFollowInterval.row,
+        supportBuffs.row,
+        supportAutoFollowRow,
+    );
+
     const calibrationPanel = el("section", "automationCard");
     calibrationPanel.append(el("h2", "automationCardTitle", "Vision calibration"));
     const calibrationGrid = el("div", "automationCalibrationGrid");
@@ -79,6 +129,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         ["playerHpRoi", "Player HP region"],
         ["targetHpRoi", "Target HP region"],
         ["targetScanRoi", "Target scan area"],
+        ["mainPartyHpRoi", "Main party HP (Support view)"],
+        ["mainPartyTargetRoi", "Main party row (Support view)"],
         ["target", "Capture target label"],
         ["loot", "Capture loot"],
         ["death", "Capture death dialog"],
@@ -92,6 +144,15 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             selectedCalibration = kind;
             for (const candidate of calibrationGrid.querySelectorAll("button")) candidate.classList.toggle("selected", candidate === item);
             canvasHint.textContent = `Drag the ${label.toLowerCase()} rectangle on the current frame.`;
+            if (isSupportCalibration(kind)) {
+                if (!supportSelect.value) {
+                    showToast("Choose a different Support client first", "error");
+                    return;
+                }
+                void refreshFrame(false, supportSelect.value);
+            } else if (currentFrameProfileId !== profileId()) {
+                void refreshFrame(false, profileId());
+            }
         };
         if (kind === "target" || kind === "loot" || kind === "death") {
             const badge = el("span", "automationTemplateBadge", "missing");
@@ -122,7 +183,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         el("p", "automationShortcut", "Global emergency stop: Ctrl+Shift+F12"),
     );
     const sidebar = el("aside", "automationSidebar");
-    sidebar.append(sessionPanel, configPanel, calibrationPanel);
+    sidebar.append(sessionPanel, configPanel, supportPanel, calibrationPanel);
     const layout = el("div", "automationLayout");
     layout.append(main, sidebar);
     root.append(header, toolbar, layout);
@@ -133,6 +194,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     let dragStart: { x: number; y: number } | null = null;
     let dragEnd: { x: number; y: number } | null = null;
     let refreshInFlight = false;
+    let currentFrameProfileId = "";
+    let profiles: Profile[] = [];
     const profileId = (): string => profileSelect.value;
     const valueOf = (input: HTMLInputElement, fallback: number): number => {
         const parsed = Number(input.value);
@@ -141,7 +204,11 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
 
     function updateConfigFromFields(): void {
         if (!config) return;
-        config.mode = modeSelect.value === "combat" ? "combat" : "observer";
+        config.mode = modeSelect.value === "combat"
+            || modeSelect.value === "support"
+            || modeSelect.value === "combat_support"
+            ? modeSelect.value
+            : "observer";
         config.attackKeys = attack.input.value.split(",").map((key) => key.trim().toUpperCase()).filter(Boolean);
         config.healKey = heal.input.value.trim().toUpperCase();
         config.pickupKey = pickup.input.value.trim().toUpperCase();
@@ -151,6 +218,21 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         config.templateThreshold = valueOf(threshold.input, config.templateThreshold);
         config.tickMs = valueOf(tick.input, config.tickMs);
         config.actionIntervalMs = valueOf(action.input, config.actionIntervalMs);
+        config.supportProfileId = supportSelect.value || null;
+        config.supportHealKey = supportHeal.input.value.trim().toUpperCase();
+        config.supportFollowKey = supportFollow.input.value.trim().toUpperCase();
+        config.supportHealThreshold = valueOf(supportHealAt.input, config.supportHealThreshold);
+        config.supportSafeHpThreshold = valueOf(supportSafeAt.input, config.supportSafeHpThreshold);
+        config.supportHealIntervalMs = valueOf(supportHealInterval.input, config.supportHealIntervalMs);
+        config.supportFollowIntervalMs = valueOf(supportFollowInterval.input, config.supportFollowIntervalMs);
+        config.supportFollowAfterAction = supportAutoFollow.checked;
+        config.supportBuffs = supportBuffs.input.value.split(",").map((entry) => {
+            const [rawKey, rawInterval] = entry.split(":");
+            return {
+                key: rawKey?.trim().toUpperCase() ?? "",
+                intervalSec: Number(rawInterval?.trim() ?? "600"),
+            };
+        }).filter((buff) => buff.key.length > 0 && Number.isFinite(buff.intervalSec));
     }
 
     function updateFields(): void {
@@ -165,6 +247,15 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         threshold.input.value = String(config.templateThreshold);
         tick.input.value = String(config.tickMs);
         action.input.value = String(config.actionIntervalMs);
+        supportSelect.value = config.supportProfileId ?? "";
+        supportHeal.input.value = config.supportHealKey;
+        supportFollow.input.value = config.supportFollowKey;
+        supportHealAt.input.value = String(config.supportHealThreshold);
+        supportSafeAt.input.value = String(config.supportSafeHpThreshold);
+        supportHealInterval.input.value = String(config.supportHealIntervalMs);
+        supportFollowInterval.input.value = String(config.supportFollowIntervalMs);
+        supportAutoFollow.checked = config.supportFollowAfterAction;
+        supportBuffs.input.value = config.supportBuffs.map((buff) => buff.key + ":" + buff.intervalSec).join(", ");
         for (const kind of ["target", "loot", "death"] as const) {
             const badge = templateBadges.get(kind);
             if (!badge) continue;
@@ -191,9 +282,14 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         ctx.fillStyle = "#05070d";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         if (frameImage) ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
-        if (config?.playerHpRoi) strokeRect(ctx, config.playerHpRoi, "#ef476f", "Player HP");
-        if (config?.targetHpRoi) strokeRect(ctx, config.targetHpRoi, "#ffd166", "Target HP");
-        if (config?.targetScanRoi) strokeRect(ctx, config.targetScanRoi, "#06d6a0", "Scan area");
+        if (currentFrameProfileId === profileId()) {
+            if (config?.playerHpRoi) strokeRect(ctx, config.playerHpRoi, "#ef476f", "Player HP");
+            if (config?.targetHpRoi) strokeRect(ctx, config.targetHpRoi, "#ffd166", "Target HP");
+            if (config?.targetScanRoi) strokeRect(ctx, config.targetScanRoi, "#06d6a0", "Scan area");
+        } else if (currentFrameProfileId === config?.supportProfileId) {
+            if (config.mainPartyHpRoi) strokeRect(ctx, config.mainPartyHpRoi, "#ef476f", "Main party HP");
+            if (config.mainPartyTargetRoi) strokeRect(ctx, config.mainPartyTargetRoi, "#ffd166", "Main party row");
+        }
         if (dragStart && dragEnd) {
             const x = Math.min(dragStart.x, dragEnd.x);
             const y = Math.min(dragStart.y, dragEnd.y);
@@ -240,10 +336,24 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const rect: NormalizedRect = { x: x / canvas.width, y: y / canvas.height, width: width / canvas.width, height: height / canvas.height };
         const kind = selectedCalibration;
         try {
-            if (kind === "playerHpRoi" || kind === "targetHpRoi" || kind === "targetScanRoi") {
-                if ((kind === "playerHpRoi" || kind === "targetHpRoi")
+            if (isSupportCalibration(kind) && currentFrameProfileId !== config.supportProfileId) {
+                throw new Error("Refresh the selected Support view before calibrating its party panel");
+            }
+            if (!isSupportCalibration(kind) && currentFrameProfileId !== profileId()) {
+                throw new Error("Refresh the Main view before calibrating this region");
+            }
+            if (kind === "playerHpRoi"
+                || kind === "targetHpRoi"
+                || kind === "targetScanRoi"
+                || kind === "mainPartyHpRoi"
+                || kind === "mainPartyTargetRoi") {
+                if ((kind === "playerHpRoi" || kind === "targetHpRoi" || kind === "mainPartyHpRoi")
                     && (rect.width > 0.60 || rect.height > 0.18 || rect.width * rect.height > 0.06)) {
                     throw new Error("HP selection is too large; select only the colored interior of the bar");
+                }
+                if (kind === "mainPartyTargetRoi"
+                    && (rect.width > 0.70 || rect.height > 0.20 || rect.width * rect.height > 0.10)) {
+                    throw new Error("Main party row is too large; select only the Main character's name row");
                 }
                 config[kind] = rect;
                 canvasHint.textContent = "Region updated. Save the profile to persist it.";
@@ -258,12 +368,12 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         }
     };
 
-    async function refreshFrame(showCalibrationGuidance = false): Promise<void> {
-        if (refreshInFlight || !profileId()) return;
+    async function refreshFrame(showCalibrationGuidance = false, sourceProfileId = profileId()): Promise<void> {
+        if (refreshInFlight || !sourceProfileId) return;
         refreshInFlight = true;
         refreshButton.disabled = true;
         try {
-            const preview = await window.api.automationPreview(profileId());
+            const preview = await window.api.automationPreview(sourceProfileId);
             const next = new Image();
             await new Promise<void>((resolve, reject) => {
                 next.onload = () => resolve();
@@ -271,12 +381,16 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
                 next.src = preview.dataUrl;
             });
             frameImage = next;
+            currentFrameProfileId = sourceProfileId;
             canvas.width = preview.width;
             canvas.height = preview.height;
             const captured = `Captured ${preview.width}×${preview.height} at ${new Date(preview.capturedAt).toLocaleTimeString()}`;
-            canvasHint.textContent = showCalibrationGuidance && !config?.playerHpRoi && !templates.target
+            canvasHint.textContent = showCalibrationGuidance
+                && sourceProfileId === profileId()
+                && !config?.playerHpRoi
+                && !templates.target
                 ? captured + ". Verify the game is visible, then recalibrate Player HP and capture a small target label."
-                : captured;
+                : captured + (sourceProfileId === profileId() ? " • Main view" : " • Support view");
             draw();
         } catch (error) {
             canvasHint.textContent = error instanceof Error ? error.message : String(error);
@@ -290,8 +404,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const result = await window.api.automationGetConfig(id);
         config = result.config;
         templates = result.templates;
+        refreshSupportOptions(id);
+        currentFrameProfileId = id;
         updateFields();
-        await refreshFrame(true);
+        await refreshFrame(true, id);
     }
 
     function applyStatus(status: AutomationStatus): void {
@@ -301,8 +417,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
         metrics.textContent = [
             `HP ${pct(status.metrics.playerHp)}`,
+            `Main party ${pct(status.metrics.mainPartyHp)}`,
             `Target ${pct(status.metrics.targetScore)}`,
             `Loot ${pct(status.metrics.lootScore)}`,
+            `Support ${status.metrics.supportAction ?? "—"}`,
             `Capture ${status.metrics.captureMs ?? "—"} ms`,
             `Analyze ${status.metrics.analyzeMs ?? "—"} ms`,
             `Actions ${status.actionCount}`,
@@ -313,8 +431,30 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         stopButton.disabled = status.state === "stopped";
     }
 
-    profileSelect.onchange = () => void loadProfile(profileId()).catch((error) => showToast(String(error), "error"));
-    refreshButton.onclick = () => void refreshFrame(true);
+    function refreshSupportOptions(mainProfileId: string): void {
+        const selected = config?.supportProfileId ?? supportSelect.value;
+        supportSelect.replaceChildren(new Option("Choose Support profile", ""));
+        for (const profile of profiles) {
+            if (profile.id === mainProfileId) continue;
+            supportSelect.append(new Option(profileLabel(profile), profile.id));
+        }
+        supportSelect.value = [...supportSelect.options].some((option) => option.value === selected) ? selected : "";
+    }
+
+    profileSelect.onchange = () => {
+        void loadProfile(profileId()).catch((error) => showToast(String(error), "error"));
+    };
+    supportSelect.onchange = () => {
+        if (config) config.supportProfileId = supportSelect.value || null;
+        if (isSupportCalibration(selectedCalibration) && supportSelect.value) {
+            void refreshFrame(false, supportSelect.value);
+        }
+    };
+    refreshButton.onclick = () => {
+        const source = isSupportCalibration(selectedCalibration) ? supportSelect.value : profileId();
+        if (!source) return showToast("Choose a Support client first", "error");
+        void refreshFrame(true, source);
+    };
     saveButton.onclick = async () => {
         if (!config) return;
         updateConfigFromFields();
@@ -343,12 +483,13 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         }
     });
 
-    const profiles = await window.api.profilesList() as Profile[];
+    profiles = await window.api.profilesList() as Profile[];
     for (const profile of profiles) {
-        profileSelect.append(new Option(profile.name?.trim() || profile.characters?.[0]?.trim() || profile.id, profile.id));
+        profileSelect.append(new Option(profileLabel(profile), profile.id));
     }
     const requested = qs().get("profileId");
     if (requested && profiles.some((profile) => profile.id === requested)) profileSelect.value = requested;
+    refreshSupportOptions(profileId());
     if (profiles.length === 0) {
         profileSelect.append(new Option("Create a launcher profile first", ""));
         profileSelect.disabled = true;
@@ -358,6 +499,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         await loadProfile(profileId());
     }
     applyStatus(await window.api.automationStatus());
-    const previewTimer = setInterval(() => { if (!document.hidden) void refreshFrame(); }, 2500);
+    const previewTimer = setInterval(() => {
+        if (!document.hidden) void refreshFrame(false, currentFrameProfileId || profileId());
+    }, 2500);
     window.addEventListener("beforeunload", () => clearInterval(previewTimer), { once: true });
 }

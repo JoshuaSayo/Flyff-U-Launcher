@@ -1,7 +1,7 @@
 {
   "name": "flyff-u-automation",
   "productName": "Flyff-U-Automation",
-  "version": "4.0.2-automation.2",
+  "version": "4.0.2-automation.3",
   "description": "Supervised, vision-only automation fork of Flyff-U-Launcher",
   "repository": {
     "type": "git",

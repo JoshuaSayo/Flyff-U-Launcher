@@ -36,4 +36,12 @@ describe("automation FSM", () => {
     it("keeps observer mode free of action states", () => {
         expect(decideAutomationState("observing", { ...base, mode: "observer", playerHp: 0.1, targetVisible: true })).toBe("observing");
     });
+
+    it("keeps support-only mode in the paired-support state", () => {
+        expect(decideAutomationState("supporting", { ...base, mode: "support", playerHp: 0.1 })).toBe("supporting");
+    });
+
+    it("runs the combat FSM while paired support is also enabled", () => {
+        expect(decideAutomationState("searching", { ...base, mode: "combat_support", targetVisible: true })).toBe("approaching");
+    });
 });

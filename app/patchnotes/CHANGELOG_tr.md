@@ -1,6 +1,18 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.3
+
+### Eşleştirilmiş Main ve Support otomasyonu
+
+- Karakter adlarıyla açık Main ve Support profil seçimi eklendi.
+- Support görünümünde Main parti HP çubuğu ve tıklanabilir parti satırı kalibrasyonu eklendi.
+- Tepkisel iyileştirme, bağımsız `tuş:saniye` buff zamanlamaları, otomatik takip ve Combat + Support modu eklendi.
+- Arka plan girişi eşleştirilmiş Support profili ve CDP `Input` alanıyla sınırlandırıldı.
+
+Kurulum: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Sürüm 4.0.2-automation.2
 
 ### Otomasyon yakalama düzeltmesi

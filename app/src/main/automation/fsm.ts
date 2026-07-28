@@ -1,9 +1,9 @@
 /** Pure combat state decisions, separated from capture and input side effects. */
 
-import type { AutomationState } from "../../shared/automation";
+import type { AutomationMode, AutomationState } from "../../shared/automation";
 
 export type FsmObservation = {
-    mode: "observer" | "combat";
+    mode: AutomationMode;
     playerHp: number | null;
     targetVisible: boolean;
     lootVisible: boolean;
@@ -19,6 +19,7 @@ export type FsmObservation = {
 export function decideAutomationState(current: AutomationState, observation: FsmObservation): AutomationState {
     if (observation.deathVisible) return "paused";
     if (observation.mode === "observer") return "observing";
+    if (observation.mode === "support") return "supporting";
     if (observation.playerHp !== null && observation.playerHp < observation.healThreshold && current !== "healing") return "healing";
     switch (current) {
         case "stopped":
@@ -37,6 +38,8 @@ export function decideAutomationState(current: AutomationState, observation: Fsm
             return observation.playerHp !== null && observation.playerHp >= observation.safeHpThreshold ? "attacking" : "healing";
         case "looting":
             return observation.elapsedInStateMs >= observation.lootTimeoutMs && !observation.lootVisible ? "searching" : "looting";
+        case "supporting":
+            return "supporting";
         default:
             return "faulted";
     }

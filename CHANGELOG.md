@@ -2,6 +2,29 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.3] - 2026-07-28
+
+### Added
+
+- Explicit Main and Support profile pairing using launcher-owned profile identities and character labels.
+- `Support healer/buffer` and `Combat + Support` modes.
+- Support-view calibration for the Main character's party HP bar and clickable party row.
+- Reactive Support healing with low/safe HP hysteresis, independently scheduled buff keys, and periodic auto-follow.
+- Main-party HP and last Support action telemetry in the workbench.
+- Dedicated tests for schema migration, support FSM behavior, paired capture, and background Support key/click delivery.
+
+### Changed
+
+- Automation configuration schema is now version 3. Version 2 vision calibration is preserved during migration.
+- The centralized input facade may use only the CDP `Input` domain for the explicitly paired background Support client. It does not evaluate JavaScript, inspect the DOM, read network traffic, or consume official API/plugin data.
+
+### Security
+
+- The Main client must remain focused for every armed mode.
+- Support input ownership is released on pause, stop, fault, workbench close, or emergency stop.
+- Support mode refuses to start without two different live profiles and both Support-view party calibrations.
+- DevTools and controller Forward Hold cannot share the Support client's debugger attachment; the runtime fails closed with an actionable error.
+
 ## [4.0.2-automation.2] - 2026-07-28
 
 ### Added

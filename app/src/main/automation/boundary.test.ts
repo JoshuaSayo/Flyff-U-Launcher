@@ -24,12 +24,22 @@ describe("automation architectural boundary", () => {
         }
     });
 
-    it("does not inspect the game DOM or attach a Chromium debugger", () => {
+    it("does not inspect the game DOM and confines debugger access to the input facade", () => {
         for (const file of files) {
             const source = readFileSync(file, "utf8");
             expect(source, file).not.toContain("executeJavaScript");
-            expect(source, file).not.toContain(".debugger");
+            if (!file.endsWith("inputFacade.ts")) expect(source, file).not.toContain(".debugger");
         }
+    });
+
+    it("uses only the CDP Input domain for paired Support delivery", () => {
+        const file = files.find((candidate) => candidate.endsWith("inputFacade.ts"));
+        expect(file).toBeDefined();
+        const source = readFileSync(file!, "utf8");
+        const commands = [...source.matchAll(/\.sendCommand\(\s*["']([^"']+)["']/g)]
+            .map((match) => match[1]);
+        expect(commands.length).toBeGreaterThan(0);
+        expect(commands.every((command) => command.startsWith("Input."))).toBe(true);
     });
 
     it("emits input only through inputFacade.ts", () => {

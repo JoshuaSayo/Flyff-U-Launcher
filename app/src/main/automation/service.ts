@@ -44,9 +44,18 @@ const EMPTY_METRICS: AutomationMetrics = {
     targetHp: null,
     targetScore: null,
     lootScore: null,
+    mainPartyHp: null,
+    supportProfileId: null,
+    supportAction: null,
     captureMs: null,
     analyzeMs: null,
 };
+
+const usesCombat = (config: AutomationConfig): boolean =>
+    config.mode === "combat" || config.mode === "combat_support";
+
+const usesSupport = (config: AutomationConfig): boolean =>
+    config.mode === "support" || config.mode === "combat_support";
 
 export class AutomationService {
     private readonly input = new AutomationInputFacade();
@@ -62,7 +71,7 @@ export class AutomationService {
     };
     private config: AutomationConfig | null = null;
     private timer: ReturnType<typeof setTimeout> | null = null;
-    private captureInFlight: Promise<CapturedFrame> | null = null;
+    private captureInFlight = new Map<string, Promise<CapturedFrame>>();
     private stateEnteredAt = Date.now();
     private lastActionAt = 0;
     private lastSearchAt = 0;
@@ -71,6 +80,11 @@ export class AutomationService {
     private generation = 0;
     private templateCache = new Map<string, PixelFrame>();
     private captureSourceLogged = new Set<string>();
+    private supportBuffDueAt = new Map<string, number>();
+    private lastSupportHealAt = 0;
+    private lastSupportFollowAt = 0;
+    private lastSupportAction: string | null = null;
+    private supportHealing = false;
 
     constructor(private readonly options: AutomationServiceOptions) {}
 
@@ -131,17 +145,32 @@ export class AutomationService {
         if (!target) throw new Error("Open the selected profile in a launcher client first");
         const config = await this.options.store.load(profileId);
         const templates = await this.options.store.templateState(profileId);
-        if (config.mode === "combat") {
-            if (!acknowledged) throw new Error("Supervision acknowledgement is required before arming combat mode");
+        const combatEnabled = usesCombat(config);
+        const supportEnabled = usesSupport(config);
+        if (combatEnabled) {
             if (!config.playerHpRoi) throw new Error("Calibrate the player HP region before arming combat mode");
             if (!templates.target) throw new Error("Capture a target template before arming combat mode");
+        }
+        let supportTarget: AutomationTarget | null = null;
+        if (supportEnabled) {
+            if (!config.supportProfileId) throw new Error("Choose a different Support client profile");
+            if (!config.mainPartyHpRoi) throw new Error("Calibrate the Main party HP region on the Support view");
+            if (!config.mainPartyTargetRoi) throw new Error("Calibrate the Main party target row on the Support view");
+            supportTarget = this.options.resolveTarget(config.supportProfileId);
+            if (!supportTarget) throw new Error("Open the selected Support profile in the launcher first");
+        }
+        if (combatEnabled || supportEnabled) {
+            if (!acknowledged) throw new Error("Supervision acknowledgement is required before arming automated input");
             if (target.hostWindow.isMinimized()) target.hostWindow.restore();
             target.hostWindow.show();
             target.hostWindow.focus();
             target.webContents.focus();
             await new Promise<void>((resolve) => setImmediate(resolve));
             if (!target.webContents.isFocused()) throw new Error("The selected game client could not receive foreground focus");
-            this.input.claim(profileId, target.webContents);
+            if (combatEnabled) this.input.claim(profileId, target.webContents);
+            if (supportEnabled && supportTarget && config.supportProfileId) {
+                this.input.claimSupport(config.supportProfileId, supportTarget.webContents);
+            }
         }
         this.config = config;
         this.generation++;
@@ -149,10 +178,30 @@ export class AutomationService {
         this.attackIndex = 0;
         this.lastActionAt = 0;
         this.lastSearchAt = 0;
-        this.setState(config.mode === "observer" ? "observing" : "searching", config.mode === "observer" ? "Observer mode started" : "Combat mode armed");
+        this.lastSupportHealAt = 0;
+        this.lastSupportFollowAt = 0;
+        this.lastSupportAction = null;
+        this.supportHealing = false;
+        this.supportBuffDueAt = new Map(config.supportBuffs.map((buff) => [buff.key, 0]));
+        const initialState: AutomationState = config.mode === "observer"
+            ? "observing"
+            : config.mode === "support"
+                ? "supporting"
+                : "searching";
+        const initialReason = config.mode === "observer"
+            ? "Observer mode started"
+            : config.mode === "support"
+                ? "Paired Support mode armed"
+                : config.mode === "combat_support"
+                    ? "Combat and paired Support modes armed"
+                    : "Combat mode armed";
+        this.setState(initialState, initialReason);
         this.statusValue.profileId = profileId;
-        this.statusValue.armed = config.mode === "combat";
-        this.statusValue.metrics = { ...EMPTY_METRICS };
+        this.statusValue.armed = combatEnabled || supportEnabled;
+        this.statusValue.metrics = {
+            ...EMPTY_METRICS,
+            supportProfileId: config.supportProfileId,
+        };
         this.emit();
         this.schedule(0, this.generation);
         return this.status();
@@ -179,6 +228,11 @@ export class AutomationService {
         this.generation++;
         this.input.release();
         this.config = null;
+        this.supportBuffDueAt.clear();
+        this.lastSupportHealAt = 0;
+        this.lastSupportFollowAt = 0;
+        this.lastSupportAction = null;
+        this.supportHealing = false;
         this.statusValue.profileId = null;
         this.statusValue.armed = false;
         this.statusValue.metrics = { ...EMPTY_METRICS };
@@ -190,6 +244,7 @@ export class AutomationService {
         this.stop("Application shutting down");
         this.templateCache.clear();
         this.captureSourceLogged.clear();
+        this.captureInFlight.clear();
     }
 
     private assertEditable(profileId: string): void {
@@ -209,8 +264,9 @@ export class AutomationService {
     }
 
     private async capture(profileId: string): Promise<CapturedFrame> {
-        if (this.captureInFlight) return this.captureInFlight;
-        this.captureInFlight = (async () => {
+        const existing = this.captureInFlight.get(profileId);
+        if (existing) return existing;
+        const capturePromise = (async () => {
             const target = this.options.resolveTarget(profileId);
             if (!target) throw new Error("Selected client is no longer open");
             const started = performance.now();
@@ -229,10 +285,13 @@ export class AutomationService {
             }
             return { png, pixels, captureMs: performance.now() - started };
         })();
+        this.captureInFlight.set(profileId, capturePromise);
         try {
-            return await this.captureInFlight;
+            return await capturePromise;
         } finally {
-            this.captureInFlight = null;
+            if (this.captureInFlight.get(profileId) === capturePromise) {
+                this.captureInFlight.delete(profileId);
+            }
         }
     }
 
@@ -277,41 +336,57 @@ export class AutomationService {
         try {
             const target = this.options.resolveTarget(profileId);
             if (!target) throw new Error("Selected client was closed");
-            if (config.mode === "combat" && !target.webContents.isFocused()) {
-                this.pause("Focus lost: click the selected client, then resume");
+            if (config.mode !== "observer" && !target.webContents.isFocused()) {
+                this.pause("Main client focus lost: click the Main client, then resume");
                 return;
             }
-            const captured = await this.capture(profileId);
+            const supportProfileId = usesSupport(config) ? config.supportProfileId : null;
+            const supportTarget = supportProfileId ? this.options.resolveTarget(supportProfileId) : null;
+            if (supportProfileId && !supportTarget) throw new Error("Support client was closed");
+            const [captured, supportCaptured] = await Promise.all([
+                this.capture(profileId),
+                supportProfileId ? this.capture(supportProfileId) : Promise.resolve(null),
+            ]);
             const analyzeStarted = performance.now();
             const result = await this.analyze(captured.pixels, profileId, config);
+            const mainPartyHp = supportCaptured && config.mainPartyHpRoi
+                ? detectBarFill(supportCaptured.pixels, config.mainPartyHpRoi)
+                : null;
             const threshold = config.templateThreshold;
             const targetVisible = (result.target?.score ?? 0) >= threshold;
             const lootVisible = (result.loot?.score ?? 0) >= threshold;
             const deathVisible = (result.death?.score ?? 0) >= threshold;
+            const analyzeMs = performance.now() - analyzeStarted;
             if (this.statusValue.state === "attacking") {
                 this.lostTargetFrames = targetVisible ? 0 : this.lostTargetFrames + 1;
             } else {
                 this.lostTargetFrames = 0;
+            }
+
+            if (deathVisible) {
+                this.pause("Death screen detected; manual recovery required");
+                return;
+            }
+            if (usesCombat(config)
+                && Date.now() - this.stateEnteredAt >= config.stateTimeoutMs
+                && !["stopped", "paused", "faulted"].includes(this.statusValue.state)) {
+                this.pause(`${this.statusValue.state} exceeded the configured safety timeout`);
+                return;
+            }
+            if (supportCaptured && supportProfileId) {
+                await this.performSupportAction(supportProfileId, supportCaptured.pixels, mainPartyHp);
             }
             this.statusValue.metrics = {
                 playerHp: result.playerHp,
                 targetHp: result.targetHp,
                 targetScore: result.target?.score ?? null,
                 lootScore: result.loot?.score ?? null,
-                captureMs: Math.round(captured.captureMs * 10) / 10,
-                analyzeMs: Math.round((performance.now() - analyzeStarted) * 10) / 10,
+                mainPartyHp,
+                supportProfileId,
+                supportAction: this.lastSupportAction,
+                captureMs: Math.round(Math.max(captured.captureMs, supportCaptured?.captureMs ?? 0) * 10) / 10,
+                analyzeMs: Math.round(analyzeMs * 10) / 10,
             };
-
-            if (deathVisible) {
-                this.pause("Death screen detected; manual recovery required");
-                return;
-            }
-            if (config.mode === "combat"
-                && Date.now() - this.stateEnteredAt >= config.stateTimeoutMs
-                && !["stopped", "paused", "faulted"].includes(this.statusValue.state)) {
-                this.pause(`${this.statusValue.state} exceeded the configured safety timeout`);
-                return;
-            }
             const current = this.statusValue.state;
             const next = decideAutomationState(current, {
                 mode: config.mode,
@@ -344,6 +419,63 @@ export class AutomationService {
             this.statusValue.armed = false;
             this.setState("faulted", message);
         }
+    }
+
+    private async performSupportAction(
+        supportProfileId: string,
+        frame: PixelFrame,
+        mainPartyHp: number | null,
+    ): Promise<void> {
+        if (!this.config || !this.config.mainPartyTargetRoi) return;
+        const config = this.config;
+        const now = Date.now();
+        if (mainPartyHp !== null) {
+            if (mainPartyHp < config.supportHealThreshold) this.supportHealing = true;
+            if (mainPartyHp >= config.supportSafeHpThreshold) this.supportHealing = false;
+        }
+        const targetMain = async (): Promise<void> => {
+            const rect = config.mainPartyTargetRoi!;
+            await this.input.clickSupport(
+                supportProfileId,
+                (rect.x + rect.width / 2) * frame.width,
+                (rect.y + rect.height / 2) * frame.height,
+            );
+        };
+        const follow = async (afterAction: boolean): Promise<void> => {
+            if (!config.supportFollowAfterAction) return;
+            if (Date.now() - this.lastSupportFollowAt < config.supportFollowIntervalMs) return;
+            await this.input.pressSupportKey(supportProfileId, config.supportFollowKey);
+            this.lastSupportFollowAt = Date.now();
+            this.lastSupportAction = afterAction && this.lastSupportAction
+                ? this.lastSupportAction + " + follow " + config.supportFollowKey
+                : "Auto-follow " + config.supportFollowKey;
+            this.recordAction();
+        };
+
+        if (this.supportHealing && now - this.lastSupportHealAt >= config.supportHealIntervalMs) {
+            await targetMain();
+            await this.input.pressSupportKey(supportProfileId, config.supportHealKey);
+            this.lastSupportHealAt = Date.now();
+            this.lastSupportAction = "Heal " + config.supportHealKey;
+            this.recordAction();
+            logInfo("Support " + supportProfileId + " healed Main at " + Math.round((mainPartyHp ?? 0) * 100) + "%", "Automation");
+            await follow(true);
+            return;
+        }
+
+        const dueBuff = config.supportBuffs.find((buff) => now >= (this.supportBuffDueAt.get(buff.key) ?? 0));
+        if (dueBuff) {
+            await targetMain();
+            await this.input.pressSupportKey(supportProfileId, dueBuff.key);
+            this.supportBuffDueAt.set(dueBuff.key, Date.now() + dueBuff.intervalSec * 1000);
+            this.lastSupportAction = "Buff " + dueBuff.key;
+            this.recordAction();
+            logInfo("Support " + supportProfileId + " cast buff " + dueBuff.key, "Automation");
+            await follow(true);
+            return;
+        }
+
+        await follow(false);
     }
 
     private async onStateEntered(state: AutomationState, target: TemplateMatch | null, loot: TemplateMatch | null): Promise<void> {

@@ -1,6 +1,18 @@
 # 📦 更新日志
 
 ---
+## 版本 4.0.2-automation.3
+
+### Main 与 Support 配对自动化
+
+- 新增带角色名称的 Main 与 Support 配置文件明确选择。
+- 新增在 Support 画面中校准 Main 队伍 HP 条和可点击队伍行。
+- 新增响应式治疗、独立的 `按键:秒数` 增益计划、自动跟随以及 Combat + Support 模式。
+- 后台输入仅限配对的 Support 配置文件和 CDP `Input` 域。
+
+设置方法请参阅 [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md)。
+
+---
 ## 版本 4.0.2-automation.2
 
 ### 自动化捕获修复

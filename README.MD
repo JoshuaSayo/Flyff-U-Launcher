@@ -37,6 +37,8 @@ Dieser GPL-3.0-Fork basiert auf [GH-Praxa/Flyff-U-Launcher](https://github.com/G
 - Kalibriert Spieler-HP, Ziel-HP und Suchbereich direkt auf einer aktuellen Vorschau
 - Verwendet lokale Struktur-Templates für Ziel, Beute und Tod; offizielle API- und Plugin-Daten sind technisch vom Automatisierungspfad getrennt
 - Pausiert bei Fokusverlust, geschlossenem Workbench-Fenster, erkanntem Tod und jedem Zustands-Timeout
+- Paart ein Main-Profil mit einem Support-/Ringmaster-Profil für reaktives Heilen, zeitgesteuerte Buffs und Auto-Follow
+- Hintergrund-Eingaben sind auf das ausdrücklich gewählte Support-Profil und die CDP-`Input`-Domäne begrenzt
 - Globaler Not-Aus: `Ctrl+Shift+F12`
 
 Erste Schritte: [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). Technische Sicherheitsgrenzen: [AUTOMATION.md](AUTOMATION.md).
@@ -313,11 +315,13 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Calibrates player HP, target HP, and the target scan area on a current frame preview
 - Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
 - Pauses on focus loss, workbench close, detected death, and every state timeout
+- Pairs an explicit Main profile with a Support/Ringmaster profile for reactive healing, scheduled buffs, and auto-follow
+- Background input is restricted to the selected Support profile and the CDP `Input` domain
 - Global emergency stop: `Ctrl+Shift+F12`
 
 For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
 
-Version `4.0.2-automation.2` fixes the blank/gradient preview that prevented the FSM from reaching input. Upgrading clears only the old pixel regions and templates; verify the preview shows the game, then recalibrate once.
+Version `4.0.2-automation.3` adds supervised Main/Support pairing. The launcher profile list identifies each client; you calibrate the Main's party HP bar and party row on the Support view, then configure heal, buff, and follow keys.
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles

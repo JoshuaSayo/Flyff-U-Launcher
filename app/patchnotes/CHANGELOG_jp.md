@@ -1,6 +1,18 @@
 # 📦 パッチノート
 
 ---
+## バージョン 4.0.2-automation.3
+
+### Main と Support のペア自動化
+
+- キャラクター名付きの Main / Support プロファイル選択を追加しました。
+- Support 画面で Main のパーティ HP バーとクリック可能なパーティ行を調整できます。
+- 反応型ヒール、独立した `キー:秒` バフスケジュール、オートフォロー、Combat + Support モードを追加しました。
+- バックグラウンド入力は、ペアにした Support プロファイルと CDP `Input` ドメインだけに制限されます。
+
+設定方法: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md)。
+
+---
 ## バージョン 4.0.2-automation.2
 
 ### オートメーションキャプチャの修正

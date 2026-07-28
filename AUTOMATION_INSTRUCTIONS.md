@@ -7,12 +7,13 @@ This is the practical, click-by-click guide for the supervised Vision Automation
 ## What you need
 
 - Flyff-U-Automation installed or launched from the packaged application.
-- At least one launcher profile.
-- A Flyff Universe session opened from that profile.
+- One launcher profile for Main.
+- A different launcher profile for Support when using healer/buffer mode.
+- A Flyff Universe session opened from each selected profile.
 - A stable game resolution, HUD scale, and window layout.
 - Skills assigned to keyboard keys such as `1`, `2`, `3`, and `4`.
 
-The automation controls one selected foreground game client. It does not control an external Brave, Chrome, or Edge window.
+The automation can control one foreground Main client and one explicitly paired background Support client. Both must be embedded launcher sessions; external Brave, Chrome, or Edge windows are not supported.
 
 > **Required after upgrading to 4.0.2-automation.2:** The old vision regions and templates are cleared once because earlier builds captured the parent launcher background instead of the embedded game. Click **Refresh frame**, confirm you can see the actual Flyff game, and recalibrate the pixel regions and templates below. Your keys, thresholds, and timing settings are preserved.
 
@@ -25,7 +26,7 @@ Use Observer mode first. It analyzes the screen without sending mouse or keyboar
 3. Log in and enter the game manually.
 4. In the session window, click the **★ Tools** button.
 5. Select **Supervised Automation**.
-6. Select the correct **Client profile** at the top of the workbench.
+6. Select the correct **Main profile** at the top of the workbench.
 7. Click **Refresh frame** and confirm the actual game scene is visible—not a black panel or blue/red launcher gradient.
 8. Leave **Mode** set to **Observer only**.
 9. Click **Save profile**.
@@ -123,6 +124,46 @@ Before enabling combat:
 
 The default template threshold is `0.82`. It is applied to a normalized structural-correlation score. Reduce it only in small steps if the intended image does not match. Raise it if unrelated objects match. Never tune only while the intended target is visible; test absent-target frames too.
 
+## Set up Main and Support
+
+This replaces SmartFS's name scan with explicit launcher profile pairing. The launcher already knows each profile and its configured character name, so you choose the roles directly.
+
+1. Create separate launcher profiles for the Main character and Ringmaster/healer.
+2. Open both profiles and log in manually.
+3. Put them in **Grid View** or a two-client Split layout so both game surfaces remain rendered.
+4. Open the workbench and choose the played/attacking character under **Main profile**.
+5. Under **Paired Support**, choose the Ringmaster/healer under **Support client**.
+6. Open the party panel on the Support client and make sure Main is listed.
+7. Click **Main party HP (Support view)**. The preview switches to Support. Drag only over the colored interior of Main's party HP bar.
+8. Click **Main party row (Support view)** and drag over Main's clickable name row. This is how Support selects Main before healing or buffing.
+9. Enter the **Support heal key** and the HP thresholds.
+10. Configure buffs using `key:seconds`. Example: `1:600, 2:600, F3:900`.
+11. Configure the follow key and interval. `Z` is only the default; use the key assigned in your game.
+12. Click **Save profile**.
+
+The role selection is stored on the Main automation profile. Main and Support cannot be the same launcher profile.
+
+### Verify Support mode
+
+1. Select **Support healer/buffer**. This leaves Main combat under your manual control.
+2. Check the supervision acknowledgement and click **Start**.
+3. Keep the Main client in the foreground.
+4. Watch **Main party** in the status metrics. Damage Main manually and confirm the value decreases.
+5. When HP passes **Heal Main below**, Support clicks Main's calibrated party row and uses the heal key until **Heal Main until** is reached.
+6. Confirm each configured buff is cast once after starting, then independently when its interval expires.
+7. Confirm the **Support** metric reports the last action, such as `Heal 4`, `Buff F3`, or `Auto-follow Z`.
+8. Stop and correct calibration immediately if Support targets the wrong party member.
+
+After this test, select **Combat + Support** if you want the existing Main Combat FSM and the Support healer/buffer scheduler running together.
+
+Support action priority is:
+
+1. Reactive healing.
+2. One due buff.
+3. Periodic auto-follow.
+
+Do not open DevTools or activate controller **Forward Hold** on the paired Support client while automation is armed. These features use the same Chromium debugger attachment, so automation fails closed instead of competing for input ownership.
+
 ## Configure Combat FSM
 
 | Field | Example | Meaning |
@@ -165,6 +206,7 @@ Keep supervising the game. Opening another application or moving focus away from
 | `ATTACKING` | Cycling the configured attack keys |
 | `HEALING` | Using the heal key until HP reaches the safe threshold |
 | `LOOTING` | Clicking matched loot or using the pickup key |
+| `SUPPORTING` | Monitoring Main's party HP and scheduling heal, buff, and follow actions on Support |
 | `PAUSED` | Sending no input; manual resume is required |
 | `FAULTED` | Capture, client, or validation failed; read the reason shown |
 | `STOPPED` | Runtime and input ownership are fully stopped |
@@ -174,7 +216,7 @@ The reason text below the status explains the last transition or safety stop.
 ## Pause, resume, and emergency stop
 
 - **Pause** stops the active loop and releases tracked keys and mouse buttons.
-- **Resume** requires the supervision checkbox again for Combat FSM mode.
+- **Resume** requires the supervision checkbox again for every input-emitting mode.
 - **Emergency stop** fully stops the session and releases input ownership.
 - `Ctrl+Shift+F12` is the global emergency-stop shortcut.
 - Closing the workbench pauses the session.
@@ -208,6 +250,21 @@ Read the error toast and verify:
 
 If the state immediately changes to **PAUSED** with “Death screen detected” while the character is alive, verify that you are running `4.0.2-automation.2` or newer. Refresh the frame, confirm it shows the game, then recapture a small death-dialog detail only when that dialog is actually visible.
 
+## If Support does not heal or buff
+
+Verify:
+
+- Main and Support are different launcher profiles and both sessions are open.
+- The workbench preview says **Support view** during party calibration.
+- **Main party HP** covers only Main's party HP fill.
+- **Main party row** covers Main's clickable name row.
+- Buff entries use `key:seconds`, not just a list of keys.
+- The Main client remains focused.
+- DevTools is closed and controller Forward Hold is disabled for Support.
+- The status **Main party** value is changing and **Support** shows dispatched actions.
+
+If the Support preview is blank, place both profiles in Grid/Split view, wait for both games to render, and refresh again.
+
 ## If detection is unreliable
 
 - Restore the resolution and HUD scale used during calibration.
@@ -222,7 +279,7 @@ If the state immediately changes to **PAUSED** with “Death screen detected” 
 
 - The workbench operates only on pixels currently rendered by the selected launcher client.
 - Calibration is specific to the profile's resolution and visual layout.
-- One selected foreground client is controlled at a time.
+- One foreground Main and one explicitly paired background Support client can be controlled together.
 - Official API, API Fetch, quest, monster, item, and plugin data are intentionally unavailable to automation.
-- The app does not read process memory, inspect packets, inspect the game DOM, modify the client, or bypass anti-cheat systems.
+- Background Support input uses only the CDP `Input` domain. The app does not evaluate page JavaScript, inspect the game DOM, read process memory or packets, modify the client, or bypass anti-cheat systems.
 - Supervision safeguards reduce accidental unattended operation; they do not remove game-account or terms-of-service risk.

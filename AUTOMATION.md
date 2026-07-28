@@ -1,6 +1,6 @@
 # Supervised Vision Automation
 
-Flyff-U-Automation adds a local, foreground-only automation workbench to the upstream launcher. The feature is designed for explicit setup and continuous human supervision. It does not promise compliance with Flyff Universe rules, and using it may put a game account at risk.
+Flyff-U-Automation adds a local, supervised automation workbench to the upstream launcher. It can control one foreground Main client and one explicitly paired background Support client. It does not promise compliance with Flyff Universe rules, and using it may put a game account at risk.
 
 For a beginner-friendly click-by-click walkthrough, start with [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md).
 
@@ -10,27 +10,28 @@ Automation may use:
 
 - pixels captured directly from the selected embedded game `WebContents` on Windows and macOS, with the platform-safe host capture fallback retained on Linux;
 - locally saved regions of interest and image templates;
-- the selected client's foreground input channel;
+- the Main client's foreground input channel;
+- the CDP `Input` domain for keyboard and mouse delivery to one explicitly paired Support client;
 - per-profile settings stored under the launcher's user-data directory.
 
 Automation does not use:
 
 - game-process memory, injection, hooks, or client modification;
 - network packets, traffic interception, or protocol emulation;
-- DOM queries, JavaScript evaluation in the game page, or Chromium debugging;
+- DOM queries, JavaScript evaluation, or CDP Runtime/DOM/Network inspection;
 - official Flyff API data, API Fetch output, plugins, quest data, item data, or monster databases;
-- background input or control of an unfocused client;
+- background control of any client other than the paired Support profile;
 - anti-cheat bypasses or claims of undetectability.
 
 The architectural boundary is enforced by an automated test in `app/src/main/automation/boundary.test.ts`. All emitted automation input is centralized in `app/src/main/automation/inputFacade.ts`.
 
 ## Before you start
 
-1. Launch one profile in a session window and log in manually.
+1. Launch the Main profile and, for paired support, a different Support profile in a session window and log in manually.
 2. Use a stable resolution, UI scale, camera angle, and game HUD layout.
 3. Put skills on the keys you intend to configure.
-4. Keep the selected game client visible. Covered, minimized, resized, or visually changed clients can invalidate calibration.
-5. Decide whether you only want telemetry or whether you accept the risk of arming the combat FSM.
+4. Keep both clients rendered in a Grid/Split layout while calibrating paired support.
+5. Decide whether you want observer telemetry, Main combat, Support healer/buffer, or both combat and support.
 
 ## Open the workbench
 
@@ -45,6 +46,8 @@ Choose a calibration action and drag a tight rectangle on the current preview:
 - **Player HP region**: the colored fill area of the player's HP bar;
 - **Target HP region**: the colored fill area of the active target's HP bar;
 - **Target scan area**: the gameplay region where target and loot templates should be searched;
+- **Main party HP (Support view)**: the colored fill inside the Main character's party HP bar as seen by Support;
+- **Main party row (Support view)**: the Main character's name row that Support clicks before casting;
 - **Capture target label**: a small, distinctive monster label or other stable target structure;
 - **Capture loot**: a small, distinctive loot structure;
 - **Capture death dialog**: a stable part of the death/respawn dialog.
@@ -69,6 +72,12 @@ Click **Save profile** after changing regions, templates, keys, or thresholds. C
 | Template threshold | Minimum structural-match score | 0.82 |
 | Vision tick | Delay between perception cycles | 500 ms |
 | Action interval | Minimum interval between repeated actions | 850 ms |
+| Support client | Different live launcher profile containing the healer/buffer | None |
+| Support heal key | Heal skill on the Support client's action bar | 4 |
+| Heal Main below / until | Hysteresis thresholds for reactive healing | 0.50 / 0.80 |
+| Heal interval | Minimum interval between reactive heals | 1100 ms |
+| Buffs | Comma-separated `key:seconds` schedule, such as `1:600, F3:900` | Empty |
+| Auto-follow key / interval | Periodically resumes following Main | Z / 5000 ms |
 
 The implementation also bounds approach, loot, and global state timeouts. Invalid or unsafe values are normalized before they are persisted.
 
@@ -86,6 +95,17 @@ To use **Combat FSM**:
 
 Combat mode pauses when the client loses focus. It also pauses when the workbench closes, a death template matches, or a state exceeds its safety timeout. After correcting the cause, refocus the game client, acknowledge supervision again, and click **Resume**.
 
+To use paired Support:
+
+1. Put Main and Support in a launcher Grid/Split layout and select Main in **Main profile**.
+2. Choose the Ringmaster/healer in **Support client**. The same profile cannot fill both roles.
+3. Open the party panel on Support. Select **Main party HP (Support view)** and draw only the Main's HP fill.
+4. Select **Main party row (Support view)** and draw the clickable Main name row.
+5. Configure the Support heal key, independent buff schedules, and auto-follow key.
+6. Test **Support healer/buffer** while playing Main manually, or choose **Combat + Support** to run both systems.
+
+Support priority is reactive healing, then one due buff, then periodic follow. Each buff has its own next-due timestamp. Healing remains active until the safe threshold is reached. The Main client must stay focused; Support input is delivered in the background only to the paired profile.
+
 Use **Emergency stop** for a normal immediate stop, or press the global shortcut `Ctrl+Shift+F12` even when another window is active. Stop and pause both release all keys and mouse buttons tracked by the input facade.
 
 ## Finite-state behavior
@@ -98,6 +118,7 @@ Use **Emergency stop** for a normal immediate stop, or press the global shortcut
 | Attacking | Cycles configured attack keys | Target absent for three frames, or low player HP |
 | Healing | Repeats the heal key at the action interval | Player HP reaches the safe threshold |
 | Looting | Clicks matched loot or uses the fallback pickup key | Loot timeout with no visible loot |
+| Supporting | Monitors Main party HP and schedules heal, buff, and follow actions | User pauses or stops |
 | Paused | No input; held input is released | Explicit supervised resume |
 | Faulted | No input after capture, validation, or client errors | Correct the problem and start again |
 
@@ -117,6 +138,17 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Select only the interior colored fill of the bar.
 - Avoid the frame, numbers, icons, shadows, and overlapping effects.
 - Recalibrate after changing resolution, HUD scale, theme, or layout.
+- For `Main party` telemetry, ensure the preview says **Support view** and select the Main's party HP bar—not Support's own HP.
+
+### Support does not heal or buff
+
+- Confirm both different profiles are open inside this launcher.
+- Keep both profiles rendered in Grid/Split view during setup.
+- Confirm the Support preview shows the Ringmaster/healer client.
+- Recalibrate both **Main party HP** and **Main party row** from the Support view.
+- Use `key:seconds` buff entries, for example `1:600, 2:600, F3:900`.
+- Close DevTools and disable controller Forward Hold for this Support profile; those features cannot share the same debugger attachment.
+- Read **Main party** and **Support** in the status metrics to see perceived HP and the last dispatched action.
 
 ### Target or loot does not match
 

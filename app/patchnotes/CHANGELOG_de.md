@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.3
+
+### Gekoppelte Main- und Support-Automatisierung
+
+- Explizite Auswahl von Main- und Support-Profil mit Charakternamen.
+- Kalibrierung der Main-Party-HP und der anklickbaren Party-Zeile in der Support-Ansicht.
+- Reaktives Heilen, unabhängige `Taste:Sekunden`-Buff-Zeitpläne, Auto-Follow und kombinierter Combat+Support-Modus.
+- Hintergrund-Eingaben sind auf das gekoppelte Support-Profil und die CDP-`Input`-Domäne begrenzt.
+
+Einrichtung: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.2
 
 ### Hotfix für die Automatisierungserfassung

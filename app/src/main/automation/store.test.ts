@@ -38,4 +38,31 @@ describe("AutomationStore", () => {
             await rm(root, { recursive: true, force: true });
         }
     });
+
+    it("preserves version-2 vision calibration while adding paired-support defaults", async () => {
+        const root = await mkdtemp(path.join(tmpdir(), "flyff-automation-store-"));
+        const profileDir = path.join(root, "profile-2");
+        const playerHpRoi = { x: 0.02, y: 0.03, width: 0.20, height: 0.04 };
+        await mkdir(profileDir, { recursive: true });
+        await writeFile(path.join(profileDir, "config.json"), JSON.stringify({
+            version: 2,
+            profileId: "profile-2",
+            mode: "combat",
+            playerHpRoi,
+        }), "utf8");
+        await writeFile(path.join(profileDir, "target.png"), Buffer.from("preserve"), "utf8");
+
+        try {
+            const store = new AutomationStore(root);
+            const config = await store.load("profile-2");
+
+            expect(config.version).toBe(AUTOMATION_CONFIG_VERSION);
+            expect(config.playerHpRoi).toEqual(playerHpRoi);
+            expect(config.supportProfileId).toBeNull();
+            expect(config.supportBuffs).toEqual([]);
+            expect((await store.templateState("profile-2")).target).toBe(true);
+        } finally {
+            await rm(root, { recursive: true, force: true });
+        }
+    });
 });

@@ -1,6 +1,18 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.3
+
+### Automatisation Main et Support associée
+
+- Sélection explicite des profils Main et Support avec les noms de personnages.
+- Calibration, depuis la vue Support, de la barre de vie de Main dans le groupe et de sa ligne cliquable.
+- Soins réactifs, buffs indépendants au format `touche:secondes`, suivi automatique et mode Combat + Support.
+- Les entrées en arrière-plan sont limitées au profil Support associé et au domaine CDP `Input`.
+
+Configuration: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.2
 
 ### Correctif de capture de l'automatisation

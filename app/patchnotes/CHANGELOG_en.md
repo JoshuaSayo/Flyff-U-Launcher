@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.3
+
+### Paired Main and Support automation
+
+- Added explicit Main and Support profile selection with character labels.
+- Added Support-view calibration for Main's party HP bar and clickable party row.
+- Added reactive healing, independent `key:seconds` buff schedules, periodic auto-follow, and a combined Combat + Support mode.
+- Background input is restricted to the paired Support client through the CDP `Input` domain; official API, plugins, DOM, memory, and packet data remain isolated.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for setup.
+
+---
 ## Version 4.0.2-automation.2
 
 ### Automation capture hotfix

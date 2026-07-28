@@ -2,7 +2,14 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
-export const AUTOMATION_CONFIG_VERSION = 2 as const;
+export const AUTOMATION_CONFIG_VERSION = 3 as const;
+
+export type AutomationMode = "observer" | "combat" | "support" | "combat_support";
+
+export type SupportBuff = {
+    key: string;
+    intervalSec: number;
+};
 
 export type AutomationState =
     | "stopped"
@@ -12,6 +19,7 @@ export type AutomationState =
     | "attacking"
     | "healing"
     | "looting"
+    | "supporting"
     | "paused"
     | "faulted";
 
@@ -25,7 +33,7 @@ export type NormalizedRect = {
 export type AutomationConfig = {
     version: typeof AUTOMATION_CONFIG_VERSION;
     profileId: string;
-    mode: "observer" | "combat";
+    mode: AutomationMode;
     playerHpRoi: NormalizedRect | null;
     targetHpRoi: NormalizedRect | null;
     targetScanRoi: NormalizedRect;
@@ -41,6 +49,17 @@ export type AutomationConfig = {
     approachTimeoutMs: number;
     lootTimeoutMs: number;
     stateTimeoutMs: number;
+    supportProfileId: string | null;
+    mainPartyHpRoi: NormalizedRect | null;
+    mainPartyTargetRoi: NormalizedRect | null;
+    supportHealKey: string;
+    supportFollowKey: string;
+    supportHealThreshold: number;
+    supportSafeHpThreshold: number;
+    supportHealIntervalMs: number;
+    supportFollowAfterAction: boolean;
+    supportFollowIntervalMs: number;
+    supportBuffs: SupportBuff[];
 };
 
 export type AutomationTemplateState = Record<AutomationTemplateKind, boolean>;
@@ -50,6 +69,9 @@ export type AutomationMetrics = {
     targetHp: number | null;
     targetScore: number | null;
     lootScore: number | null;
+    mainPartyHp: number | null;
+    supportProfileId: string | null;
+    supportAction: string | null;
     captureMs: number | null;
     analyzeMs: number | null;
 };
@@ -91,6 +113,17 @@ export function defaultAutomationConfig(profileId: string): AutomationConfig {
         approachTimeoutMs: 5000,
         lootTimeoutMs: 3500,
         stateTimeoutMs: 30000,
+        supportProfileId: null,
+        mainPartyHpRoi: null,
+        mainPartyTargetRoi: null,
+        supportHealKey: "4",
+        supportFollowKey: "Z",
+        supportHealThreshold: 0.50,
+        supportSafeHpThreshold: 0.80,
+        supportHealIntervalMs: 1100,
+        supportFollowAfterAction: true,
+        supportFollowIntervalMs: 5000,
+        supportBuffs: [],
     };
 }
 
@@ -119,10 +152,35 @@ function normalizeBarRect(value: unknown): NormalizedRect | null {
     return rect;
 }
 
+function normalizeSupportTargetRect(value: unknown): NormalizedRect | null {
+    const rect = normalizeRect(value, null);
+    if (!rect || rect.width > 0.70 || rect.height > 0.20 || rect.width * rect.height > 0.10) return null;
+    return rect;
+}
+
 function normalizeKey(value: unknown, fallback: string): string {
     if (typeof value !== "string") return fallback;
     const key = value.trim().toUpperCase();
     return /^(?:[A-Z0-9]|F(?:[1-9]|1[0-2])|SPACE|LEFT|RIGHT|UP|DOWN|TAB)$/.test(key) ? key : fallback;
+}
+
+function normalizeSupportBuffs(value: unknown): SupportBuff[] {
+    if (!Array.isArray(value)) return [];
+    const seen = new Set<string>();
+    const buffs: SupportBuff[] = [];
+    for (const candidate of value) {
+        if (!candidate || typeof candidate !== "object") continue;
+        const raw = candidate as Partial<SupportBuff>;
+        const key = normalizeKey(raw.key, "");
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        buffs.push({
+            key,
+            intervalSec: Math.round(finiteNumber(raw.intervalSec, 600, 10, 7200)),
+        });
+        if (buffs.length >= 12) break;
+    }
+    return buffs;
 }
 
 /** Normalize renderer or disk input into a bounded automation configuration. */
@@ -135,7 +193,9 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
     const config: AutomationConfig = {
         ...defaults,
         profileId,
-        mode: input.mode === "combat" ? "combat" : "observer",
+        mode: input.mode === "combat" || input.mode === "support" || input.mode === "combat_support"
+            ? input.mode
+            : "observer",
         playerHpRoi: normalizeBarRect(input.playerHpRoi),
         targetHpRoi: normalizeBarRect(input.targetHpRoi),
         targetScanRoi: normalizeRect(input.targetScanRoi, defaults.targetScanRoi) ?? defaults.targetScanRoi,
@@ -151,7 +211,27 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
         approachTimeoutMs: Math.round(finiteNumber(input.approachTimeoutMs, defaults.approachTimeoutMs, 1000, 15000)),
         lootTimeoutMs: Math.round(finiteNumber(input.lootTimeoutMs, defaults.lootTimeoutMs, 500, 15000)),
         stateTimeoutMs: Math.round(finiteNumber(input.stateTimeoutMs, defaults.stateTimeoutMs, 5000, 180000)),
+        supportProfileId: typeof input.supportProfileId === "string"
+            && input.supportProfileId.length > 0
+            && input.supportProfileId.length <= 200
+            && input.supportProfileId !== profileId
+            ? input.supportProfileId
+            : null,
+        mainPartyHpRoi: normalizeBarRect(input.mainPartyHpRoi),
+        mainPartyTargetRoi: normalizeSupportTargetRect(input.mainPartyTargetRoi),
+        supportHealKey: normalizeKey(input.supportHealKey, defaults.supportHealKey),
+        supportFollowKey: normalizeKey(input.supportFollowKey, defaults.supportFollowKey),
+        supportHealThreshold: finiteNumber(input.supportHealThreshold, defaults.supportHealThreshold, 0.05, 0.95),
+        supportSafeHpThreshold: finiteNumber(input.supportSafeHpThreshold, defaults.supportSafeHpThreshold, 0.10, 1),
+        supportHealIntervalMs: Math.round(finiteNumber(input.supportHealIntervalMs, defaults.supportHealIntervalMs, 500, 5000)),
+        supportFollowAfterAction: input.supportFollowAfterAction !== false,
+        supportFollowIntervalMs: Math.round(finiteNumber(input.supportFollowIntervalMs, defaults.supportFollowIntervalMs, 1000, 60000)),
+        supportBuffs: normalizeSupportBuffs(input.supportBuffs),
     };
     config.safeHpThreshold = Math.max(config.safeHpThreshold, Math.min(1, config.healThreshold + 0.05));
+    config.supportSafeHpThreshold = Math.max(
+        config.supportSafeHpThreshold,
+        Math.min(1, config.supportHealThreshold + 0.05),
+    );
     return config;
 }

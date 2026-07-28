@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.3
+
+### Sparowana automatyzacja Main i Support
+
+- Dodano jawny wybór profili Main i Support z nazwami postaci.
+- Dodano kalibrację paska HP Maina i klikalnego wiersza drużyny w widoku Support.
+- Dodano reaktywne leczenie, niezależne harmonogramy buffów `klawisz:sekundy`, auto-follow oraz tryb Combat + Support.
+- Wejście w tle jest ograniczone do sparowanego profilu Support i domeny CDP `Input`.
+
+Konfiguracja: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Wersja 4.0.2-automation.2
 
 ### Poprawka przechwytywania automatyzacji

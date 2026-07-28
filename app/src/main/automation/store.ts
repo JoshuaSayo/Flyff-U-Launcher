@@ -31,14 +31,20 @@ export class AutomationStore {
             const raw = JSON.parse(await readFile(this.configPath(profileId), "utf8")) as unknown;
             if (!raw || typeof raw !== "object" || (raw as { version?: unknown }).version !== AUTOMATION_CONFIG_VERSION) {
                 const defaults = defaultAutomationConfig(profileId);
+                const previousVersion = raw && typeof raw === "object" ? Number((raw as { version?: unknown }).version) : 0;
+                const clearStaleCapture = previousVersion < 2;
                 const migrated = normalizeAutomationConfig(profileId, {
                     ...(raw && typeof raw === "object" ? raw : {}),
                     version: AUTOMATION_CONFIG_VERSION,
-                    playerHpRoi: null,
-                    targetHpRoi: null,
-                    targetScanRoi: defaults.targetScanRoi,
+                    ...(clearStaleCapture ? {
+                        playerHpRoi: null,
+                        targetHpRoi: null,
+                        targetScanRoi: defaults.targetScanRoi,
+                    } : {}),
                 });
-                await Promise.all(TEMPLATE_KINDS.map((kind) => this.removeTemplate(profileId, kind)));
+                if (clearStaleCapture) {
+                    await Promise.all(TEMPLATE_KINDS.map((kind) => this.removeTemplate(profileId, kind)));
+                }
                 return this.save(profileId, migrated);
             }
             return normalizeAutomationConfig(profileId, raw);

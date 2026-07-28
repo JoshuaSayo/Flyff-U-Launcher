@@ -32,4 +32,36 @@ describe("normalizeAutomationConfig", () => {
         expect(config.playerHpRoi).toBeNull();
         expect(config.targetHpRoi).toBeNull();
     });
+
+    it("normalizes paired support settings and unique buff intervals", () => {
+        const config = normalizeAutomationConfig("main", {
+            mode: "combat_support",
+            supportProfileId: "support",
+            mainPartyHpRoi: { x: 0.1, y: 0.2, width: 0.3, height: 0.05 },
+            mainPartyTargetRoi: { x: 0.1, y: 0.15, width: 0.3, height: 0.05 },
+            supportHealThreshold: 0.7,
+            supportSafeHpThreshold: 0.2,
+            supportBuffs: [
+                { key: "1", intervalSec: 600 },
+                { key: "1", intervalSec: 30 },
+                { key: "F3", intervalSec: 900 },
+                { key: "bad key", intervalSec: 1 },
+            ],
+        });
+        expect(config.mode).toBe("combat_support");
+        expect(config.supportProfileId).toBe("support");
+        expect(config.supportSafeHpThreshold).toBeGreaterThan(config.supportHealThreshold);
+        expect(config.supportBuffs).toEqual([
+            { key: "1", intervalSec: 600 },
+            { key: "F3", intervalSec: 900 },
+        ]);
+    });
+
+    it("does not allow a profile to support itself", () => {
+        const config = normalizeAutomationConfig("main", {
+            mode: "support",
+            supportProfileId: "main",
+        });
+        expect(config.supportProfileId).toBeNull();
+    });
 });

@@ -14,17 +14,19 @@ Launcher profiles can contain authenticated Electron session cookies and local s
 
 ## Automation boundary
 
-The automation subsystem is intentionally limited to compositor-captured pixels, local configuration/templates, and foreground input for one explicitly selected client.
+The automation subsystem is intentionally limited to captured pixels, local configuration/templates, foreground input for the explicitly selected Main client, and CDP `Input` events for one explicitly paired Support client.
 
 It must not gain a dependency on:
 
 - the official Flyff API or API Fetch data;
 - launcher plugins or their databases;
 - process memory, code injection, network interception, or packet manipulation;
-- game-page DOM access, `executeJavaScript`, Chromium debugging, or background input;
+- game-page DOM access, `executeJavaScript`, CDP Runtime/DOM/Network domains, or debugger use outside `inputFacade.ts`;
 - anti-cheat bypass or evasion features.
 
-Changes to `app/src/main/automation` must keep `boundary.test.ts` passing. Input emission must remain centralized in `inputFacade.ts`, and workbench mutations must remain restricted to the dedicated trusted renderer.
+The narrow Support exception may attach Electron's Chromium debugger only to dispatch keyboard and mouse events through the CDP `Input` domain. It must never evaluate page JavaScript, inspect the DOM, read traffic, or attach to an unpaired client. The Main client must remain focused while automation is armed.
+
+Changes to `app/src/main/automation` must keep `boundary.test.ts` passing. All foreground and Support input emission must remain centralized in `inputFacade.ts`, and workbench mutations must remain restricted to the dedicated trusted renderer.
 
 ## Dependency policy
 
