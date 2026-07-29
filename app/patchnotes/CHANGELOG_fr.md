@@ -1,6 +1,17 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.9
+
+### Réacquisition en direct des monstres mobiles
+
+- Chaque clic d'approche est recalculé depuis la correspondance de nom la plus récente et valide.
+- Le premier clic vise juste sous le nom ; deux petits essais latéraux couvrent les monstres compacts en mouvement.
+- Si un monstre non sélectionné quitte la zone de scan, l'ancien point est abandonné et la recherche reprend.
+
+Guide de capture et de zone de scan : [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.8
 
 ### Combat de base sans blocage par l'étalonnage HP

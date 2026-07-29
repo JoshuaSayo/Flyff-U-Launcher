@@ -75,11 +75,22 @@ const usesCombat = (config: AutomationConfig): boolean =>
 const usesSupport = (config: AutomationConfig): boolean =>
     config.mode === "support" || config.mode === "combat_support";
 
-export function targetBodyClickPoint(target: TemplateMatch): { x: number; y: number } {
-    const bodyOffset = Math.max(8, Math.min(32, Math.round(target.height * 0.35)));
+/**
+ * Convert a freshly matched monster-name crop into a bounded body-click sweep.
+ *
+ * Flyff renders the clickable monster immediately below its name. The first
+ * point stays close to the crop; retries fan slightly left and right to cover
+ * small moving monsters without turning the scan area into a click grid.
+ */
+export function targetBodyClickPoint(target: TemplateMatch, attempt = 0): { x: number; y: number } {
+    const index = Math.max(0, Math.min(2, Math.floor(attempt)));
+    const bodyGap = Math.max(4, Math.min(12, Math.round(target.height * 0.12)));
+    const horizontalSweep = Math.max(4, Math.min(18, Math.round(target.width * 0.12)));
+    const xOffsets = [0, -horizontalSweep, horizontalSweep];
+    const yOffsets = [bodyGap, bodyGap + 6, bodyGap + 6];
     return {
-        x: target.x + target.width / 2,
-        y: target.y + target.height + bodyOffset,
+        x: target.x + target.width / 2 + xOffsets[index]!,
+        y: target.y + target.height + yOffsets[index]!,
     };
 }
 
@@ -529,9 +540,9 @@ export class AutomationService {
             });
             if (next !== current) {
                 this.setState(next, this.transitionReason(current, next));
-                await this.onStateEntered(next, current, result.target, result.loot);
+                await this.onStateEntered(next, result.target, result.loot);
             } else {
-                await this.performStateAction(next, result.target, result.loot, targetSelected, targetEngaged);
+                await this.performStateAction(next, result.target, result.loot, targetEngaged);
             }
             this.emit();
             if (generation === this.generation && !["paused", "stopped", "faulted"].includes(this.statusValue.state)) {
@@ -714,12 +725,22 @@ export class AutomationService {
         await follow(false);
     }
 
-    private async clickActiveTarget(target: TemplateMatch | null, replacePoint: boolean): Promise<boolean> {
-        if (!this.statusValue.profileId) return false;
-        if ((replacePoint || !this.activeTargetPoint) && target) {
-            this.activeTargetPoint = targetBodyClickPoint(target);
+    private async clickActiveTarget(target: TemplateMatch | null): Promise<boolean> {
+        if (!this.statusValue.profileId || !this.config) return false;
+        if (!target || target.score < this.config.templateThreshold) {
+            this.activeTargetPoint = null;
+            return false;
         }
-        if (!this.activeTargetPoint) return false;
+        this.activeTargetPoint = targetBodyClickPoint(target, this.targetClickAttempts);
+        const clickNumber = this.targetClickAttempts + 1;
+        logInfo(
+            "Target click " + clickNumber + "/3 at ("
+                + Math.round(this.activeTargetPoint.x) + ", "
+                + Math.round(this.activeTargetPoint.y) + ") from fresh "
+                + target.width + "x" + target.height + " match "
+                + Math.round(target.score * 1000) / 10 + "%",
+            "Automation",
+        );
         await this.input.click(
             this.statusValue.profileId,
             this.activeTargetPoint.x,
@@ -732,14 +753,13 @@ export class AutomationService {
 
     private async onStateEntered(
         state: AutomationState,
-        from: AutomationState,
         target: TemplateMatch | null,
         loot: TemplateMatch | null,
     ): Promise<void> {
         if (!this.config || !this.statusValue.profileId) return;
         if (state === "approaching") {
             this.targetClickAttempts = 0;
-            await this.clickActiveTarget(target, from === "searching" || !this.activeTargetPoint);
+            await this.clickActiveTarget(target);
         } else if (state === "healing") {
             await this.input.pressKey(this.statusValue.profileId, this.config.healKey);
             this.recordAction();
@@ -757,7 +777,6 @@ export class AutomationService {
         state: AutomationState,
         target: TemplateMatch | null,
         loot: TemplateMatch | null,
-        targetSelected: boolean,
         targetEngaged: boolean,
     ): Promise<void> {
         if (!this.config || !this.statusValue.profileId) return;
@@ -767,7 +786,7 @@ export class AutomationService {
             if (!targetEngaged
                 && this.targetClickAttempts < 3
                 && now - this.lastActionAt >= selectionClickInterval) {
-                await this.clickActiveTarget(target, !targetSelected);
+                await this.clickActiveTarget(target);
             }
         } else if (state === "attacking"
             && this.config.useAttackSkills
@@ -832,7 +851,7 @@ export class AutomationService {
                 ? "Loot sweep complete"
                 : from === "healing"
                     ? "HP recovered but no target remains selected"
-                    : "Target selection or red-crosshair confirmation timed out";
+                    : "Target left the scan area or engagement confirmation timed out";
         }
         return `${from} -> ${to}`;
     }

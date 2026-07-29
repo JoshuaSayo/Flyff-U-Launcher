@@ -19,6 +19,8 @@ The automation can control one explicit Main client and one explicitly paired Su
 
 > **Automatic in 4.0.2-automation.8:** Existing profiles keep their calibration, but Main healing starts disabled. Incorrect player or target HP regions can no longer block basic targeting; the red combat crosshair is authoritative. Enable Main healing only after its HP telemetry is verified.
 
+> **Corrected in 4.0.2-automation.9:** Approach retries reacquire the monster label from the newest frame. The first click is close below the label and two bounded side points cover a small moving monster. A target that leaves the scan area is searched for again; its old coordinate is never reused.
+
 ## Quick start: Observer mode
 
 Use Observer mode first. It analyzes the screen without sending mouse or keyboard input.
@@ -98,6 +100,8 @@ Templates are saved locally for the selected profile. The badge changes from **m
 5. Drag a tight rectangle around the distinctive label or feature.
 
 Use a small structure with clear edges. Avoid animated effects, the surrounding landscape, or a large part of the monster. Oversized and low-detail selections are rejected because they create false matches. A target template is required for Combat FSM mode.
+
+For a monster-name template, include the complete readable label with only a small margin. Do not extend the crop down to the ground shadow. The click geometry is derived from the lower edge of this label crop.
 
 ### Loot template
 
@@ -243,18 +247,18 @@ Keep supervising the game. Focusing an unrelated application pauses automation; 
 The target gate is deliberate:
 
 1. The scan finds the saved monster label.
-2. The app automatically shifts below the label and clicks the monster body to select it.
-3. If necessary, the app clicks the same monster again to engage it.
+2. The app uses the newest match and clicks close below the label on the monster body.
+3. If necessary, the app reacquires the moving label and tries one small left or right fallback point.
 4. `ATTACKING` begins only after a red crosshair is detected near that monster.
 
-A white crosshair or a visible monster label alone is not accepted as combat. Selection/engagement retries are limited to three clicks and the approach timeout still applies.
+A white crosshair or a visible monster label alone is not accepted as combat. Selection/engagement retries are limited to three clicks and the approach timeout still applies. If an unselected monster leaves the scan area, the FSM immediately returns to `SEARCHING` and drops the old point.
 
 ## Understand the status
 
 | Status | What the app is doing |
 |---|---|
 | `SEARCHING` | Looking for the target template and periodically using the search key |
-| `APPROACHING` | Clicking below the matched label and waiting for a red crosshair |
+| `APPROACHING` | Reacquiring the current label, trying a bounded body point, and waiting for a red crosshair |
 | `ATTACKING` | Continuing click-to-attack; optional skill keys run only when enabled |
 | `HEALING` | Using the heal key until HP reaches the safe threshold |
 | `LOOTING` | Clicking matched loot or using the pickup key |
@@ -337,6 +341,8 @@ If the Support preview is blank, place both profiles in Grid/Split view, wait fo
 - Raise the threshold to reduce false matches.
 - Lower the threshold gradually to recover missed matches.
 - Validate every change in Observer mode before re-arming combat.
+- Keep enough world around the character inside the scan area for a moving monster to remain detectable. Leaving the area safely resets targeting to `SEARCHING`.
+- The launcher log records `Target click 1/3 at (x, y)` with the fresh match size and score for every approach attempt.
 
 ## Important limitations
 

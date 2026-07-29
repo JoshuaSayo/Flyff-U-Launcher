@@ -1,6 +1,17 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.9
+
+### Hareketli canavarları canlı yeniden yakalama
+
+- Her yaklaşma tıklaması, eşiğin üzerindeki en yeni canavar etiketi eşleşmesinden yeniden hesaplanır.
+- İlk tıklama etiketin hemen altını hedefler; iki küçük yan deneme hareketli küçük canavarları kapsar.
+- Seçilmemiş canavar tarama alanından çıkarsa eski nokta silinir ve FSM yeniden aramaya döner.
+
+Hedef şablonu ve tarama alanı kılavuzu: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Sürüm 4.0.2-automation.8
 
 ### HP kalibrasyonu engeli olmadan temel savaş

@@ -2,6 +2,19 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.9] - 2026-07-29
+
+### Fixed
+
+- Monster targeting no longer repeats one stale ground coordinate. Every bounded approach click is recalculated from the newest above-threshold template match.
+- The first click now lands close below the captured name label. Two small left/right fallback points cover moving, compact monsters without sweeping the play field.
+- An unselected target that moves outside the configured scan area immediately returns the FSM to `SEARCHING` instead of retaining its old click point until timeout.
+
+### Diagnostics
+
+- Each approach attempt logs its click number, coordinates, current template dimensions, and current match score.
+- The user's saved `Small Aibatt` crop measured `108x56`; its former fixed offset landed beneath the monster and produced a valid ground-move command.
+
 ## [4.0.2-automation.8] - 2026-07-29
 
 ### Fixed

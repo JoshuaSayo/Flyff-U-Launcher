@@ -123,10 +123,25 @@ function keyDownCodes(calls: unknown[][]): string[] {
 }
 
 describe("AutomationService combat arming", () => {
-    it("converts a matched monster label into a click point on the body below it", () => {
+    it("converts a matched monster label into a bounded body-click sweep", () => {
         expect(targetBodyClickPoint({ score: 1, x: 50, y: 30, width: 20, height: 8 })).toEqual({
             x: 60,
-            y: 46,
+            y: 42,
+        });
+        expect(targetBodyClickPoint({ score: 1, x: 50, y: 30, width: 20, height: 8 }, 1)).toEqual({
+            x: 56,
+            y: 48,
+        });
+        expect(targetBodyClickPoint({ score: 1, x: 50, y: 30, width: 20, height: 8 }, 2)).toEqual({
+            x: 64,
+            y: 48,
+        });
+    });
+
+    it("keeps the first click close to the user's current 108x56 label crop", () => {
+        expect(targetBodyClickPoint({ score: 0.669, x: 400, y: 250, width: 108, height: 56 })).toEqual({
+            x: 454,
+            y: 313,
         });
     });
 
@@ -329,7 +344,7 @@ describe("AutomationService combat arming", () => {
         const keyEvents = selected.debuggerSendCommand.mock.calls
             .filter(([method]) => method === "Input.dispatchKeyEvent");
         expect(mouseEvents.filter((event) => event.type === "mousePressed").length).toBeGreaterThanOrEqual(2);
-        expect(mouseEvents).toContainEqual(expect.objectContaining({ type: "mousePressed", x: 60, y: 46 }));
+        expect(mouseEvents).toContainEqual(expect.objectContaining({ type: "mousePressed", x: 60, y: 42 }));
         expect(keyEvents).toHaveLength(0);
         expect(service.status().metrics.targetSelected).toBe(false);
         expect(service.status().metrics.targetEngaged).toBe(true);

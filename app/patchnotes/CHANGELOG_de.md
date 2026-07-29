@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.9
+
+### Live-Neuerfassung beweglicher Monster
+
+- Jeder Annäherungs-Klick wird aus dem neuesten, gültigen Monster-Label-Treffer neu berechnet.
+- Der erste Körper-Klick liegt dicht unter dem Label; zwei kleine seitliche Versuche decken kompakte, bewegliche Monster ab.
+- Verlässt ein noch nicht ausgewähltes Monster den Scanbereich, wird der alte Punkt verworfen und die Suche fortgesetzt.
+
+Hinweise zu Zielvorlage und Scanbereich: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.8
 
 ### Basiskampf ohne HP-Kalibrierungsblockade

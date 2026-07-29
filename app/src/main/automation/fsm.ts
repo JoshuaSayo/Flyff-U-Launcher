@@ -34,6 +34,7 @@ export function decideAutomationState(current: AutomationState, observation: Fsm
             return observation.targetVisible ? "approaching" : "searching";
         case "approaching":
             if (observation.elapsedInStateMs >= observation.approachTimeoutMs) return "searching";
+            if (!observation.targetVisible && !observation.targetSelected) return "searching";
             return observation.targetEngaged ? "attacking" : "approaching";
         case "attacking":
             if (observation.lostTargetFrames >= 3) return "looting";

@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.9
+
+### Live reacquisition for moving monsters
+
+- Every approach click is recalculated from the newest above-threshold monster-label match.
+- The first body click stays close below the label; two small side fallbacks cover compact moving monsters.
+- If an unselected monster leaves the scan area, its old point is discarded and the FSM resumes searching.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for target-capture and scan-area guidance.
+
+---
 ## Version 4.0.2-automation.8
 
 ### Basic combat without HP calibration gates

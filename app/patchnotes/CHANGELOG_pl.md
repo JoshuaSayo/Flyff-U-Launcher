@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.9
+
+### Ponowne wykrywanie poruszających się potworów
+
+- Każde kliknięcie podejścia jest obliczane z najnowszego dopasowania etykiety powyżej progu.
+- Pierwsze kliknięcie trafia tuż pod etykietę; dwa małe punkty boczne obejmują ruch małych potworów.
+- Gdy niewybrany potwór opuści obszar skanowania, stary punkt jest usuwany, a FSM wraca do wyszukiwania.
+
+Instrukcja szablonu i obszaru skanowania: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Wersja 4.0.2-automation.8
 
 ### Podstawowa walka bez blokady kalibracji HP

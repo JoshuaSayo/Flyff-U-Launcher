@@ -108,11 +108,11 @@ To use **Combat FSM**:
 The targeting sequence is deliberately gated:
 
 1. Match a monster label.
-2. Translate the match to a point below the label and click the monster body to select it.
-3. Click again if the red crosshair has not appeared.
+2. Translate the newest match to a close point below the label and click the monster body.
+3. Reacquire the label and try a small left/right fallback if the red crosshair has not appeared.
 4. Enter **ATTACKING** only after the red crosshair is structurally confirmed.
 
-Selection clicks are limited to three per approach attempt. Failure to obtain the red crosshair returns the FSM to searching after the approach timeout. Target HP remains visible as optional diagnostic telemetry when calibrated.
+Selection clicks are limited to three per approach attempt. Every retry requires a fresh above-threshold match; stale coordinates are cleared. An unselected monster leaving the scan area returns the FSM to searching immediately, while a selected moving target may continue approaching until confirmation or timeout. Target HP remains visible as optional diagnostic telemetry when calibrated.
 
 Combat mode pauses when neither the selected Flyff window nor the Automation Workbench has application focus. It also pauses when the workbench closes, an explicitly enabled death template matches, or a state exceeds its safety timeout. Death detection is disabled by default. After correcting the cause, return to Flyff or the Workbench, acknowledge supervision again, and click **Resume**.
 
@@ -147,7 +147,7 @@ Use **Emergency stop** for a normal immediate stop, or press the global shortcut
 |---|---|---|
 | Observing | Captures and analyzes without input | User pauses or stops |
 | Searching | Looks for the target template and periodically sends the search key | Target match |
-| Approaching | Clicks below the matched label and retries the body click if needed | Red crosshair confirmation, or approach timeout |
+| Approaching | Reacquires the current label and tries a bounded center/left/right body point | Red crosshair confirmation, target leaves scan area, or approach timeout |
 | Attacking | Maintains click-to-attack and optionally cycles skill keys | Selected HP disappears for three frames, red crosshair is lost, or player HP is low |
 | Healing | Repeats the heal key at the action interval | Player HP reaches the safe threshold |
 | Looting | Clicks matched loot or uses the fallback pickup key | Loot timeout with no visible loot |
@@ -194,6 +194,8 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Start with the 0.60 default threshold. Live status shows `Target score / need`; raise it only if absent-target frames produce false matches.
 - Re-capture after a UI-scale or resolution change.
 - For a monster target, capture the name label tightly; the runtime automatically clicks below that label on the body.
+- Moving targets are reacquired before each click. If an unselected target leaves the scan area, its old point is discarded and the FSM resumes searching.
+- Inspect `Target click N/3 at (x, y)` in the launcher log to verify which fresh match was clicked.
 
 ### Monster is selected but combat does not begin
 

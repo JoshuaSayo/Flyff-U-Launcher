@@ -37,6 +37,19 @@ describe("automation FSM", () => {
         })).toBe("attacking");
     });
 
+    it("drops a stale approach point when an unselected moving target leaves the scan area", () => {
+        expect(decideAutomationState("approaching", {
+            ...base,
+            targetVisible: false,
+            targetSelected: false,
+        })).toBe("searching");
+        expect(decideAutomationState("approaching", {
+            ...base,
+            targetVisible: false,
+            targetSelected: true,
+        })).toBe("approaching");
+    });
+
     it("re-engages a selected monster when the red crosshair is lost", () => {
         expect(decideAutomationState("attacking", {
             ...base,
