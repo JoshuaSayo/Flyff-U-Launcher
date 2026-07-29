@@ -8,6 +8,7 @@ const readySupport: SetupReadinessInput = {
     hasPlayerHp: false,
     hasTargetHp: false,
     hasTargetTemplate: false,
+    deathDetectionEnabled: false,
     useAttackSkills: false,
     hasAttackKeys: false,
     hasMainPartyHp: true,
@@ -72,5 +73,17 @@ describe("automationSetupChecklist", () => {
             useAttackSkills: true,
         });
         expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual(["attack_keys"]);
+    });
+
+    it("requires a death dialog only when optional combat death detection is enabled", () => {
+        const checks = automationSetupChecklist({
+            ...readySupport,
+            mode: "combat",
+            hasPlayerHp: true,
+            hasTargetHp: true,
+            hasTargetTemplate: true,
+            deathDetectionEnabled: true,
+        });
+        expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual(["death_template"]);
     });
 });

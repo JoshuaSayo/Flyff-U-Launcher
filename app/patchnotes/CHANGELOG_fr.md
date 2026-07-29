@@ -1,6 +1,17 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.7
+
+### Ciblage fiable du corps du monstre
+
+- Les anciens modèles de mort invalides n'arrêtent plus le combat : la détection de mort est optionnelle, sauf pour la résurrection Support limitée.
+- Un libellé de monstre détecté est maintenant converti en clic sur le corps sous le libellé.
+- Les profils de version 6 sont migrés avec la détection de mort optionnelle désactivée.
+
+Consultez [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) pour la configuration mise à jour.
+
+---
 ## Version 4.0.2-automation.6
 
 ### Entrée Main fiable et seuils visibles

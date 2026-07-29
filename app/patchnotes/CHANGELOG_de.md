@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.7
+
+### Zuverlässiges Anklicken des Monsterkörpers
+
+- Ungültige alte Todes-Templates stoppen den Kampf nicht mehr: Die Todeserkennung ist optional, außer die begrenzte Support-Wiederbelebung benötigt sie.
+- Ein erkanntes Monster-Label wird nun in einen Klick auf den Monsterkörper unterhalb des Labels umgerechnet.
+- Profile aus Version 6 werden sicher mit deaktivierter optionaler Todeserkennung migriert.
+
+Die aktualisierte Einrichtung steht in [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.6
 
 ### Zuverlässige Main-Eingabe und sichtbare Einrichtungsgrenzen

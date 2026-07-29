@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.7
+
+### Reliable monster-body targeting
+
+- Invalid legacy death templates no longer stop combat: death-dialog detection is opt-in unless bounded Support resurrection needs it.
+- A matched monster label is now translated into a click on the monster body below the label.
+- Version-6 profiles migrate safely with optional death detection disabled.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for the updated setup.
+
+---
 ## Version 4.0.2-automation.6
 
 ### Reliable Main input and visible setup gates

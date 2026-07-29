@@ -51,7 +51,7 @@ Choose a calibration action and drag a tight rectangle on the current preview:
 - **Support MP (Support view)**: the colored fill inside Support's own blue MP bar, required only when MP potion is enabled;
 - **Capture target label**: a small, distinctive monster label or other stable target structure;
 - **Capture loot**: a small, distinctive loot structure;
-- **Capture death dialog**: a stable part of the death/respawn dialog.
+- **Capture death dialog (optional)**: a stable, distinctive part of the death/respawn dialog; required only when optional death detection or Support auto-resurrection is enabled.
 
 Template matching is brightness-normalized and structural. Tight selections with distinctive edges work better than large areas, animated effects, or single flat colors. Capture templates at the same UI scale used during operation.
 
@@ -66,6 +66,7 @@ Click **Save profile** after changing regions, templates, keys, or thresholds. C
 | Setting | Purpose | Default |
 |---|---|---:|
 | Mode | `Observer only` analyzes frames without input; `Combat FSM` may emit supervised Chromium input | Observer only |
+| Pause on death dialog | Opt-in local template match; also active when bounded Support resurrection is enabled | Disabled |
 | Use skill rotation | Opt-in skill keys after the red crosshair is confirmed | Disabled |
 | Skill rotation | Optional comma-separated keys cycled while engaged | 1, 2, 3 |
 | Heal key | Key used below the heal threshold | 4 |
@@ -107,14 +108,14 @@ To use **Combat FSM**:
 The targeting sequence is deliberately gated:
 
 1. Match a monster label.
-2. Click the stored monster position to select it.
+2. Translate the match to a point below the label and click the monster body to select it.
 3. Wait for the calibrated target HP bar to appear.
 4. Click again to engage normal attack.
 5. Enter **ATTACKING** only after the red crosshair is structurally confirmed.
 
 Selection clicks are limited to three per approach attempt. Failure to obtain the target HP bar or red crosshair returns the FSM to searching after the approach timeout.
 
-Combat mode pauses when neither the selected Flyff window nor the Automation Workbench has application focus. It also pauses when the workbench closes, a death template matches, or a state exceeds its safety timeout. After correcting the cause, return to Flyff or the Workbench, acknowledge supervision again, and click **Resume**.
+Combat mode pauses when neither the selected Flyff window nor the Automation Workbench has application focus. It also pauses when the workbench closes, an explicitly enabled death template matches, or a state exceeds its safety timeout. Death detection is disabled by default. After correcting the cause, return to Flyff or the Workbench, acknowledge supervision again, and click **Resume**.
 
 To use paired Support with the shortest safe setup:
 
@@ -192,6 +193,7 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 - Keep the template inside the target scan area.
 - Start with the 0.60 default threshold. Live status shows `Target score / need`; raise it only if absent-target frames produce false matches.
 - Re-capture after a UI-scale or resolution change.
+- For a monster target, capture the name label tightly; the runtime automatically clicks below that label on the body.
 
 ### Monster is selected but combat does not begin
 
@@ -204,7 +206,7 @@ The Windows/macOS preview intentionally captures the selected game `WebContents`
 
 ### The session pauses immediately
 
-Read the status reason. Focus loss, death detection, and state timeouts intentionally pause. A capture or selected-client error moves the runtime to **Faulted**. If an older build immediately reports death on a normal game frame, install `4.0.2-automation.2` or newer and perform the one-time recalibration.
+Read the status reason. Focus loss, enabled death detection, and state timeouts intentionally pause. A capture or selected-client error moves the runtime to **Faulted**. Version `4.0.2-automation.7` disables optional death detection during migration; enable it only after capturing a distinctive death-dialog detail, never terrain or a flat-color patch.
 
 ## Data and logs
 

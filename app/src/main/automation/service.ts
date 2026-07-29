@@ -75,6 +75,14 @@ const usesCombat = (config: AutomationConfig): boolean =>
 const usesSupport = (config: AutomationConfig): boolean =>
     config.mode === "support" || config.mode === "combat_support";
 
+export function targetBodyClickPoint(target: TemplateMatch): { x: number; y: number } {
+    const bodyOffset = Math.max(8, Math.min(32, Math.round(target.height * 0.35)));
+    return {
+        x: target.x + target.width / 2,
+        y: target.y + target.height + bodyOffset,
+    };
+}
+
 export class AutomationService {
     private readonly input = new AutomationInputFacade();
     private statusValue: AutomationStatus = {
@@ -180,6 +188,9 @@ export class AutomationService {
             if (!config.playerHpRoi) throw new Error("Calibrate the player HP region before arming combat mode");
             if (!config.targetHpRoi) throw new Error("Calibrate the selected target HP region before arming combat mode");
             if (!templates.target) throw new Error("Capture a target template before arming combat mode");
+            if (config.deathDetectionEnabled && !templates.death) {
+                throw new Error("Capture a death dialog template or disable optional death detection");
+            }
             if (config.useAttackSkills && config.attackKeys.length === 0) {
                 throw new Error("Add at least one attack key or disable optional skill rotation");
             }
@@ -381,10 +392,11 @@ export class AutomationService {
         death: TemplateMatch | null;
         crosshair: RedCrosshairDetection;
     }> {
+        const deathDetectionActive = config.deathDetectionEnabled || config.supportResurrectionEnabled;
         const [targetTemplate, lootTemplate, deathTemplate] = await Promise.all([
             this.loadTemplate(profileId, "target"),
             this.loadTemplate(profileId, "loot"),
-            this.loadTemplate(profileId, "death"),
+            deathDetectionActive ? this.loadTemplate(profileId, "death") : Promise.resolve(null),
         ]);
         return {
             playerHp: config.playerHpRoi ? detectBarFill(frame, config.playerHpRoi) : null,
@@ -431,7 +443,8 @@ export class AutomationService {
             const threshold = config.templateThreshold;
             const targetVisible = (result.target?.score ?? 0) >= threshold;
             const lootVisible = (result.loot?.score ?? 0) >= threshold;
-            const deathVisible = (result.death?.score ?? 0) >= threshold;
+            const deathDetectionActive = config.deathDetectionEnabled || config.supportResurrectionEnabled;
+            const deathVisible = deathDetectionActive && (result.death?.score ?? 0) >= threshold;
             const targetSelected = result.targetHp !== null;
             const targetEngaged = targetSelected && result.crosshair.engaged;
             if (targetEngaged && result.crosshair.centerX !== null && result.crosshair.centerY !== null) {
@@ -703,10 +716,7 @@ export class AutomationService {
     private async clickActiveTarget(target: TemplateMatch | null, replacePoint: boolean): Promise<boolean> {
         if (!this.statusValue.profileId) return false;
         if ((replacePoint || !this.activeTargetPoint) && target) {
-            this.activeTargetPoint = {
-                x: target.x + target.width / 2,
-                y: target.y + target.height / 2,
-            };
+            this.activeTargetPoint = targetBodyClickPoint(target);
         }
         if (!this.activeTargetPoint) return false;
         await this.input.click(
@@ -811,7 +821,7 @@ export class AutomationService {
                 ? "Red crosshair was lost; re-engaging the selected target"
                 : from === "healing"
                     ? "HP recovered; re-engaging the selected target"
-                    : "Monster label matched; clicking to select and engage";
+                    : "Monster label matched; clicking the monster body to select and engage";
         }
         if (to === "attacking") return from === "healing" ? "HP recovered with red crosshair active" : "Red combat crosshair confirmed";
         if (to === "healing") return "Player HP is below the configured threshold";

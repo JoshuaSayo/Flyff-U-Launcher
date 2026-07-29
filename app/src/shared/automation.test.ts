@@ -89,6 +89,11 @@ describe("normalizeAutomationConfig", () => {
         expect(config.templateThreshold).toBe(0.60);
     });
 
+    it("keeps optional death detection disabled unless explicitly enabled", () => {
+        expect(normalizeAutomationConfig("main", {}).deathDetectionEnabled).toBe(false);
+        expect(normalizeAutomationConfig("main", { deathDetectionEnabled: true }).deathDetectionEnabled).toBe(true);
+    });
+
     it("normalizes optional attack skill keys only when explicitly enabled", () => {
         const config = normalizeAutomationConfig("main", {
             useAttackSkills: true,

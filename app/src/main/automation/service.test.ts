@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowserWindow, NativeImage, WebContents } from "electron";
 import sharp from "sharp";
 import { defaultAutomationConfig } from "../../shared/automation";
-import { AutomationService, type AutomationTarget } from "./service";
+import { AutomationService, targetBodyClickPoint, type AutomationTarget } from "./service";
 import type { AutomationStore } from "./store";
 
 function combatStore(): AutomationStore {
@@ -123,6 +123,51 @@ function keyDownCodes(calls: unknown[][]): string[] {
 }
 
 describe("AutomationService combat arming", () => {
+    it("converts a matched monster label into a click point on the body below it", () => {
+        expect(targetBodyClickPoint({ score: 1, x: 50, y: 30, width: 20, height: 8 })).toEqual({
+            x: 60,
+            y: 46,
+        });
+    });
+
+    it("ignores a legacy death-template match when optional death detection is disabled", async () => {
+        const selected = target(true);
+        const png = await testFrame(120, 80, []);
+        selected.capturePage.mockResolvedValue(capturedImage(png));
+        const config = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "combat" as const,
+            tickMs: 250,
+            playerHpRoi: { x: 0.02, y: 0.02, width: 0.20, height: 0.05 },
+            targetHpRoi: { x: 0.30, y: 0.02, width: 0.20, height: 0.05 },
+            deathDetectionEnabled: false,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: true, loot: false, death: true })),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({
+            store,
+            resolveTarget: () => selected.value,
+        });
+        const analyze = vi.fn(async () => ({
+            playerHp: 0.9,
+            targetHp: null,
+            target: null,
+            loot: null,
+            death: { score: 1, x: 0, y: 0, width: 20, height: 10 },
+            crosshair: { engaged: false, score: 0, centerX: null, centerY: null },
+        }));
+        const internal = service as unknown as { analyze: typeof analyze };
+        vi.spyOn(internal, "analyze").mockImplementation(analyze);
+
+        await service.start("profile-1", true);
+        await vi.waitFor(() => expect(analyze).toHaveBeenCalled(), { timeout: 1500 });
+        expect(service.status().state).not.toBe("paused");
+        expect(service.status().reason).not.toContain("Death screen detected");
+        service.stop();
+    });
+
     it("restores and focuses the selected game client before arming", async () => {
         const selected = target(true);
         const service = new AutomationService({
@@ -239,10 +284,11 @@ describe("AutomationService combat arming", () => {
 
         const mouseEvents = selected.debuggerSendCommand.mock.calls
             .filter(([method]) => method === "Input.dispatchMouseEvent")
-            .map(([, event]) => event as { type?: string });
+            .map(([, event]) => event as { type?: string; x?: number; y?: number });
         const keyEvents = selected.debuggerSendCommand.mock.calls
             .filter(([method]) => method === "Input.dispatchKeyEvent");
         expect(mouseEvents.filter((event) => event.type === "mousePressed").length).toBeGreaterThanOrEqual(2);
+        expect(mouseEvents).toContainEqual(expect.objectContaining({ type: "mousePressed", x: 60, y: 46 }));
         expect(keyEvents).toHaveLength(0);
         expect(service.status().metrics.targetSelected).toBe(true);
         expect(service.status().metrics.targetEngaged).toBe(true);

@@ -2,7 +2,7 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
-export const AUTOMATION_CONFIG_VERSION = 6 as const;
+export const AUTOMATION_CONFIG_VERSION = 7 as const;
 
 export type AutomationMode = "observer" | "combat" | "support" | "combat_support";
 
@@ -41,6 +41,7 @@ export type AutomationConfig = {
     healThreshold: number;
     safeHpThreshold: number;
     templateThreshold: number;
+    deathDetectionEnabled: boolean;
     useAttackSkills: boolean;
     attackKeys: string[];
     healKey: string;
@@ -132,6 +133,7 @@ export function defaultAutomationConfig(profileId: string): AutomationConfig {
         healThreshold: 0.40,
         safeHpThreshold: 0.75,
         templateThreshold: 0.60,
+        deathDetectionEnabled: false,
         useAttackSkills: false,
         attackKeys: ["1", "2", "3"],
         healKey: "4",
@@ -251,6 +253,7 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
         healThreshold: finiteNumber(input.healThreshold, defaults.healThreshold, 0.05, 0.95),
         safeHpThreshold: finiteNumber(input.safeHpThreshold, defaults.safeHpThreshold, 0.10, 1),
         templateThreshold: finiteNumber(input.templateThreshold, defaults.templateThreshold, 0.45, 0.99),
+        deathDetectionEnabled: input.deathDetectionEnabled === true,
         useAttackSkills: input.useAttackSkills === true,
         attackKeys: Array.isArray(input.attackKeys) ? keys : defaults.attackKeys,
         healKey: normalizeKey(input.healKey, defaults.healKey),

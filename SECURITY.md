@@ -14,7 +14,7 @@ Launcher profiles can contain authenticated Electron session cookies and local s
 
 ## Automation boundary
 
-The automation subsystem is intentionally limited to captured pixels, local configuration/templates, and CDP `Input` events for the explicitly selected Main client and one explicitly paired Support client. Main party HP, Support HP, Support MP, selected-monster HP, red-crosshair engagement, and death state are derived only from explicitly calibrated pixel regions or local structural templates. Red-crosshair confirmation uses local HSV and radial pixel structure near the clicked target; it does not inspect game state through an API or the DOM.
+The automation subsystem is intentionally limited to captured pixels, local configuration/templates, and CDP `Input` events for the explicitly selected Main client and one explicitly paired Support client. Main party HP, Support HP, Support MP, selected-monster HP, red-crosshair engagement, and optional death state are derived only from explicitly calibrated pixel regions or local structural templates. Death matching is opt-in unless bounded Support resurrection needs it. Red-crosshair confirmation uses local HSV and radial pixel structure near the clicked target; it does not inspect game state through an API or the DOM.
 
 It must not gain a dependency on:
 

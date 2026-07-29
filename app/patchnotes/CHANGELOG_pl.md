@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.7
+
+### Niezawodne klikanie ciała potwora
+
+- Nieprawidłowe stare szablony śmierci nie zatrzymują już walki; wykrywanie śmierci jest opcjonalne, chyba że wymaga go ograniczone wskrzeszanie Support.
+- Wykryta etykieta potwora jest teraz przeliczana na kliknięcie ciała poniżej etykiety.
+- Profile wersji 6 są bezpiecznie migrowane z wyłączonym opcjonalnym wykrywaniem śmierci.
+
+Zaktualizowana konfiguracja: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Wersja 4.0.2-automation.6
 
 ### Niezawodne sterowanie Main i widoczne blokady konfiguracji

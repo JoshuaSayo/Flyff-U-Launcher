@@ -2,6 +2,23 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.7] - 2026-07-29
+
+### Fixed
+
+- Combat no longer pauses on legacy or invalid death templates by default. Death-dialog detection is now an explicit opt-in and remains automatically active when bounded Support resurrection is enabled.
+- Matched monster-name labels are converted into a click point below the label on the monster body instead of clicking the label text.
+- Existing version-6 profiles migrate safely without deleting their templates; the new death-detection switch starts disabled.
+
+### Changed
+
+- Configuration schema is now version 7.
+- The Workbench labels death-dialog capture as optional and includes it in the Setup Assistant only when the related feature is enabled.
+
+### Diagnostics
+
+- Live profile inspection confirmed that the user's saved target template contained the intended `Small Aibatt` label, while the saved death template contained only grass and caused every run to pause before target search.
+
 ## [4.0.2-automation.6] - 2026-07-28
 
 ### Fixed

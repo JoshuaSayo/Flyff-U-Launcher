@@ -1,6 +1,17 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.7
+
+### Güvenilir canavar gövdesi tıklaması
+
+- Geçersiz eski ölüm şablonları artık savaşı durdurmuyor; sınırlı Support diriltmesi gerektirmedikçe ölüm algılama isteğe bağlıdır.
+- Eşleşen canavar etiketi artık etiketin altındaki canavar gövdesine tıklamaya dönüştürülür.
+- Sürüm 6 profilleri, isteğe bağlı ölüm algılama kapalı olarak güvenle taşınır.
+
+Güncel kurulum için [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) dosyasına bakın.
+
+---
 ## Sürüm 4.0.2-automation.6
 
 ### Güvenilir Main girişi ve görünür kurulum eşikleri

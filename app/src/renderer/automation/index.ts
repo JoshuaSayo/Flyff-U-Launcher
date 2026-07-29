@@ -91,6 +91,13 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         useAttackSkills,
         el("span", "", "Use skill keys only after the red combat crosshair is confirmed"),
     );
+    const deathDetectionEnabled = document.createElement("input");
+    deathDetectionEnabled.type = "checkbox";
+    const deathDetectionRow = el("label", "automationAcknowledge");
+    deathDetectionRow.append(
+        deathDetectionEnabled,
+        el("span", "", "Pause when the optional death-dialog template is visually confirmed"),
+    );
     const heal = textField("Heal key");
     const pickup = textField("Pickup key");
     const search = textField("Search/camera key");
@@ -104,8 +111,9 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     mainConfigSummary.textContent = "Main combat and vision settings";
     mainConfigDetails.append(
         mainConfigSummary,
-        el("p", "automationShortcut", "Targeting clicks the monster to reveal its HP, clicks again to engage, then requires the red crosshair. Skills are not required."),
+        el("p", "automationShortcut", "Targeting matches the monster name, clicks below it on the body, then verifies the selected HP bar and red crosshair. Skills are not required."),
         useAttackSkillsRow,
+        deathDetectionRow,
         attack.row,
         heal.row,
         pickup.row,
@@ -245,7 +253,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         ["supportMpRoi", "Support MP (Support view)"],
         ["target", "4. Capture monster label"],
         ["loot", "Capture loot"],
-        ["death", "Capture death dialog"],
+        ["death", "Capture death dialog (optional)"],
     ];
     const templateBadges = new Map<AutomationTemplateKind, HTMLElement>();
     const calibrationButtons = new Map<CalibrationKind, HTMLButtonElement>();
@@ -342,6 +350,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             hasPlayerHp: Boolean(config?.playerHpRoi),
             hasTargetHp: Boolean(config?.targetHpRoi),
             hasTargetTemplate: templates.target,
+            deathDetectionEnabled: deathDetectionEnabled.checked,
             useAttackSkills: useAttackSkills.checked,
             hasAttackKeys: attack.input.value.split(",").some((key) => key.trim().length > 0),
             hasMainPartyHp: Boolean(config?.mainPartyHpRoi),
@@ -437,6 +446,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             ? modeSelect.value
             : "observer";
         config.useAttackSkills = useAttackSkills.checked;
+        config.deathDetectionEnabled = deathDetectionEnabled.checked;
         config.attackKeys = attack.input.value.split(",").map((key) => key.trim().toUpperCase()).filter(Boolean);
         config.healKey = heal.input.value.trim().toUpperCase();
         config.pickupKey = pickup.input.value.trim().toUpperCase();
@@ -488,6 +498,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         if (!config) return;
         modeSelect.value = config.mode;
         useAttackSkills.checked = config.useAttackSkills;
+        deathDetectionEnabled.checked = config.deathDetectionEnabled;
         attack.input.value = config.attackKeys.join(", ");
         heal.input.value = config.healKey;
         pickup.input.value = config.pickupKey;

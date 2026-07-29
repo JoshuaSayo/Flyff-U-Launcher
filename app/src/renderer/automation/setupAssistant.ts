@@ -7,6 +7,7 @@ export type SetupReadinessInput = {
     hasPlayerHp: boolean;
     hasTargetHp: boolean;
     hasTargetTemplate: boolean;
+    deathDetectionEnabled: boolean;
     useAttackSkills: boolean;
     hasAttackKeys: boolean;
     hasMainPartyHp: boolean;
@@ -42,6 +43,13 @@ export function automationSetupChecklist(input: SetupReadinessInput): SetupCheck
             { id: "target_hp", label: "Selected monster HP calibrated", ready: input.hasTargetHp },
             { id: "target_template", label: "Target template captured", ready: input.hasTargetTemplate },
         );
+        if (input.deathDetectionEnabled && !input.resurrectionEnabled) {
+            checks.push({
+                id: "death_template",
+                label: "Optional death dialog captured",
+                ready: input.hasDeathTemplate,
+            });
+        }
         if (input.useAttackSkills) {
             checks.push({
                 id: "attack_keys",

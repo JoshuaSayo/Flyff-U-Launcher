@@ -17,7 +17,7 @@ The automation can control one explicit Main client and one explicitly paired Su
 
 > **Required after upgrading to 4.0.2-automation.2:** The old vision regions and templates are cleared once because earlier builds captured the parent launcher background instead of the embedded game. Click **Refresh frame**, confirm you can see the actual Flyff game, and recalibrate the pixel regions and templates below. Your keys, thresholds, and timing settings are preserved.
 
-> **Automatic in 4.0.2-automation.6:** Profiles still using the former default target threshold of `0.82` migrate to `0.60`. Custom thresholds are preserved. Main input now uses Chromium's `Input` domain, and the Workbench itself counts as active supervision.
+> **Automatic in 4.0.2-automation.7:** Version-6 profiles keep their calibration and templates, but optional death-dialog detection starts disabled so an invalid legacy crop cannot stop target search. The target threshold migration, Chromium `Input` delivery, and Workbench supervision behavior from automation.6 remain in effect.
 
 ## Quick start: Observer mode
 
@@ -108,14 +108,14 @@ Use a small structure with clear edges. Avoid animated effects, the surrounding 
 
 If no loot template is captured or matched, the FSM uses the configured **Pickup key** during looting.
 
-### Death template
+### Death template (optional)
 
 1. Display a known death or respawn dialog when safely possible.
 2. Refresh the frame.
-3. Click **Capture death dialog**.
+3. Click **Capture death dialog (optional)**.
 4. Select a stable, distinctive part of the dialog.
 
-When auto-resurrection is disabled, a matching death template pauses automation for manual recovery. When auto-resurrection is enabled, the bounded Support scheduler uses this template to decide when to cast the configured resurrection key and pauses if its verification limit is exhausted. Capturing a precise template is strongly recommended.
+The saved template is ignored unless you enable **Pause when the optional death-dialog template is visually confirmed** or enable auto-resurrection. When enabled for combat, a match pauses automation for manual recovery. Auto-resurrection uses the same template to decide when to cast the configured resurrection key and pauses if its verification limit is exhausted. Capture only a distinctive dialog element—never grass, terrain, sky, or another ordinary game-scene patch.
 
 ## Test calibration in Observer mode
 
@@ -209,6 +209,7 @@ Do not open DevTools or activate controller **Forward Hold** on either automated
 | Field | Example | Meaning |
 |---|---|---|
 | Mode | Combat FSM | Enables supervised Chromium input |
+| Pause on death dialog | Off | Optional; enable only after capturing a distinctive death-dialog detail |
 | Use skill keys | Off | Optional; click-to-attack works without skills |
 | Skill rotation (optional) | `1, 2, 3` | Keys cycled only after red-crosshair confirmation |
 | Heal key | `4` | Key used below the heal threshold |
@@ -243,7 +244,7 @@ Keep supervising the game. Focusing an unrelated application pauses automation; 
 The target gate is deliberate:
 
 1. The scan finds the saved monster label.
-2. The app clicks the monster to select it.
+2. The app automatically shifts below the label and clicks the monster body to select it.
 3. The selected-monster HP region must become valid.
 4. If necessary, the app clicks the same monster again to engage it.
 5. `ATTACKING` begins only after a red crosshair is detected near that monster.
@@ -273,7 +274,7 @@ The reason text below the status explains the last transition or safety stop.
 - **Emergency stop** fully stops the session and releases input ownership.
 - `Ctrl+Shift+F12` is the global emergency-stop shortcut.
 - Closing the workbench pauses the session.
-- A detected death pauses the session unless bounded auto-resurrection is enabled. Focus outside Flyff/the Workbench or a state timeout always pauses.
+- A detected death pauses the session only when optional death detection is enabled; bounded auto-resurrection enables that detector automatically. Focus outside Flyff/the Workbench or a state timeout always pauses.
 
 After a pause, correct the cause, return to the workbench, acknowledge supervision, and click **Resume**.
 
@@ -305,13 +306,13 @@ Read the error toast and verify:
 Watch the live **Selected** and **Crosshair** values:
 
 - **HP below Heal below** activates the HEALING gate before searching. If the HUD is visibly full but telemetry is low, recalibrate Main player HP.
-- **Target below need** means no click will be sent yet. Version 4.0.2-automation.6 migrates the former 82% default to 60%.
+- **Target below need** means no click will be sent yet. Version 4.0.2-automation.6 migrated the former 82% default to 60%.
 - **Selected: no** after a click means the selected-monster HP calibration is wrong or the click missed.
 - **Selected: yes / Crosshair: no** means Flyff selected the monster but did not engage combat. The app retries the same point up to its bounded limit.
 - **Crosshair: RED** is the only condition that opens the attacking state.
 - If you enabled skill keys, confirm the rotation contains valid keys. Skills are not required when the toggle is off.
 
-If the state immediately changes to **PAUSED** with “Death screen detected” while the character is alive, verify that you are running `4.0.2-automation.2` or newer. Refresh the frame, confirm it shows the game, then recapture a small death-dialog detail only when that dialog is actually visible.
+If the state immediately changes to **PAUSED** with “Death screen detected” while the character is alive, install `4.0.2-automation.7`. Leave optional death detection off, or recapture a small distinctive death-dialog detail only while that dialog is actually visible. A grass or terrain crop will match ordinary gameplay and is not a valid death template.
 
 ## If Support does not heal or buff
 

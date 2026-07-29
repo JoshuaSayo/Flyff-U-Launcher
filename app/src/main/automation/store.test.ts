@@ -92,6 +92,7 @@ describe("AutomationStore", () => {
             expect(config.supportMpPotionEnabled).toBe(false);
             expect(config.supportResurrectionEnabled).toBe(false);
             expect(config.useAttackSkills).toBe(false);
+            expect(config.deathDetectionEnabled).toBe(false);
         } finally {
             await rm(root, { recursive: true, force: true });
         }
@@ -118,6 +119,28 @@ describe("AutomationStore", () => {
             const store = new AutomationStore(root);
             expect((await store.load("legacy")).templateThreshold).toBe(0.60);
             expect((await store.load("custom")).templateThreshold).toBe(0.70);
+        } finally {
+            await rm(root, { recursive: true, force: true });
+        }
+    });
+
+    it("migrates version-6 profiles with old death templates to safe opt-in detection", async () => {
+        const root = await mkdtemp(path.join(tmpdir(), "flyff-automation-store-"));
+        const profileDir = path.join(root, "profile-6");
+        await mkdir(profileDir, { recursive: true });
+        await writeFile(path.join(profileDir, "config.json"), JSON.stringify({
+            version: 6,
+            profileId: "profile-6",
+            mode: "combat",
+        }), "utf8");
+        await writeFile(path.join(profileDir, "death.png"), Buffer.from("old-template"));
+
+        try {
+            const store = new AutomationStore(root);
+            const config = await store.load("profile-6");
+            expect(config.version).toBe(AUTOMATION_CONFIG_VERSION);
+            expect(config.deathDetectionEnabled).toBe(false);
+            expect((await store.templateState("profile-6")).death).toBe(true);
         } finally {
             await rm(root, { recursive: true, force: true });
         }
