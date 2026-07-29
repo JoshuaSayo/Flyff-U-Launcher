@@ -1,6 +1,15 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.10
+
+### One moving monster per approach
+
+- The initial scan chooses one monster; every retry searches only near that same moving label.
+- Identical labels elsewhere can no longer steal the engagement click.
+- Losing the local lock safely returns combat to global search.
+
+---
 ## Version 4.0.2-automation.9
 
 ### Live reacquisition for moving monsters

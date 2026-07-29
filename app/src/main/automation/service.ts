@@ -75,6 +75,9 @@ const usesCombat = (config: AutomationConfig): boolean =>
 const usesSupport = (config: AutomationConfig): boolean =>
     config.mode === "support" || config.mode === "combat_support";
 
+const targetBodyGap = (height: number): number =>
+    Math.max(4, Math.min(20, Math.round(height * 0.25)));
+
 /**
  * Convert a freshly matched monster-name crop into a bounded body-click sweep.
  *
@@ -84,13 +87,35 @@ const usesSupport = (config: AutomationConfig): boolean =>
  */
 export function targetBodyClickPoint(target: TemplateMatch, attempt = 0): { x: number; y: number } {
     const index = Math.max(0, Math.min(2, Math.floor(attempt)));
-    const bodyGap = Math.max(4, Math.min(12, Math.round(target.height * 0.12)));
+    const bodyGap = targetBodyGap(target.height);
     const horizontalSweep = Math.max(4, Math.min(18, Math.round(target.width * 0.12)));
     const xOffsets = [0, -horizontalSweep, horizontalSweep];
     const yOffsets = [bodyGap, bodyGap + 6, bodyGap + 6];
     return {
         x: target.x + target.width / 2 + xOffsets[index]!,
         y: target.y + target.height + yOffsets[index]!,
+    };
+}
+
+/** Limit approach retries to the same moving monster instead of another identical label. */
+export function targetTrackingRoi(
+    frame: Pick<PixelFrame, "width" | "height">,
+    template: Pick<PixelFrame, "width" | "height">,
+    bodyPoint: { x: number; y: number },
+): { x: number; y: number; width: number; height: number } {
+    const labelCenterX = bodyPoint.x;
+    const labelCenterY = bodyPoint.y - targetBodyGap(template.height) - template.height / 2;
+    const radiusX = Math.max(96, Math.min(180, Math.round(template.width * 1.5)));
+    const radiusY = Math.max(80, Math.min(150, Math.round(template.height * 2.4)));
+    const left = Math.max(0, labelCenterX - radiusX);
+    const top = Math.max(0, labelCenterY - radiusY);
+    const right = Math.min(frame.width, labelCenterX + radiusX);
+    const bottom = Math.min(frame.height, labelCenterY + radiusY);
+    return {
+        x: left / frame.width,
+        y: top / frame.height,
+        width: Math.max(1, right - left) / frame.width,
+        height: Math.max(1, bottom - top) / frame.height,
     };
 }
 
@@ -410,10 +435,21 @@ export class AutomationService {
             this.loadTemplate(profileId, "loot"),
             deathDetectionActive ? this.loadTemplate(profileId, "death") : Promise.resolve(null),
         ]);
+        let target: TemplateMatch | null = null;
+        if (targetTemplate) {
+            const trackActiveTarget = ["approaching", "attacking", "healing"].includes(this.statusValue.state);
+            if (trackActiveTarget && this.activeTargetPoint) {
+                const trackingRoi = targetTrackingRoi(frame, targetTemplate, this.activeTargetPoint);
+                const tracked = matchTemplate(frame, targetTemplate, trackingRoi);
+                target = (tracked?.score ?? 0) >= config.templateThreshold ? tracked : null;
+            } else {
+                target = matchTemplate(frame, targetTemplate, config.targetScanRoi);
+            }
+        }
         return {
             playerHp: config.playerHpRoi ? detectBarFill(frame, config.playerHpRoi) : null,
             targetHp: config.targetHpRoi ? detectBarFill(frame, config.targetHpRoi) : null,
-            target: targetTemplate ? matchTemplate(frame, targetTemplate, config.targetScanRoi) : null,
+            target,
             loot: lootTemplate ? matchTemplate(frame, lootTemplate, config.targetScanRoi) : null,
             death: deathTemplate ? matchTemplate(frame, deathTemplate, { x: 0, y: 0, width: 1, height: 1 }) : null,
             crosshair: detectRedCrosshair(frame, config.targetScanRoi, this.activeTargetPoint),
@@ -736,7 +772,8 @@ export class AutomationService {
         logInfo(
             "Target click " + clickNumber + "/3 at ("
                 + Math.round(this.activeTargetPoint.x) + ", "
-                + Math.round(this.activeTargetPoint.y) + ") from fresh "
+                + Math.round(this.activeTargetPoint.y) + ") from "
+                + (clickNumber === 1 ? "initial" : "locked") + " fresh "
                 + target.width + "x" + target.height + " match "
                 + Math.round(target.score * 1000) / 10 + "%",
             "Automation",

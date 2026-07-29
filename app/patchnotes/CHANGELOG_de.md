@@ -1,6 +1,15 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.10
+
+### Ein bewegliches Monster pro Annäherung
+
+- Die erste Suche wählt ein Monster; jeder weitere Versuch sucht nur in der Nähe desselben beweglichen Labels.
+- Identische Labels an anderer Stelle können den Angriffsklick nicht mehr übernehmen.
+- Geht die lokale Erfassung verloren, kehrt der Kampf sicher zur globalen Suche zurück.
+
+---
 ## Version 4.0.2-automation.9
 
 ### Live-Neuerfassung beweglicher Monster

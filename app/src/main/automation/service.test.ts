@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowserWindow, NativeImage, WebContents } from "electron";
 import sharp from "sharp";
 import { defaultAutomationConfig, type AutomationConfig } from "../../shared/automation";
-import { AutomationService, targetBodyClickPoint, type AutomationTarget } from "./service";
+import {
+    AutomationService,
+    targetBodyClickPoint,
+    targetTrackingRoi,
+    type AutomationTarget,
+} from "./service";
 import type { AutomationStore } from "./store";
 
 function combatStore(): AutomationStore {
@@ -141,7 +146,20 @@ describe("AutomationService combat arming", () => {
     it("keeps the first click close to the user's current 108x56 label crop", () => {
         expect(targetBodyClickPoint({ score: 0.669, x: 400, y: 250, width: 108, height: 56 })).toEqual({
             x: 454,
-            y: 313,
+            y: 320,
+        });
+    });
+
+    it("builds a local retry region around one moving monster label", () => {
+        expect(targetTrackingRoi(
+            { width: 1708, height: 863 },
+            { width: 108, height: 43 },
+            { x: 733, y: 453 },
+        )).toEqual({
+            x: 571 / 1708,
+            y: 317.5 / 863,
+            width: 324 / 1708,
+            height: 206 / 863,
         });
     });
 

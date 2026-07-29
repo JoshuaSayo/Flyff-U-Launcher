@@ -15,11 +15,20 @@ This is the practical, click-by-click guide for the supervised Vision Automation
 
 The automation can control one explicit Main client and one explicitly paired Support client while either Flyff or the Automation Workbench remains in front. Both must be embedded launcher sessions; external Brave, Chrome, or Edge windows are not supported.
 
+### Windows build formats
+
+- **`Setup.exe`** is the Squirrel installer. It installs and updates the application under the current Windows user profile, so its filename and launch behavior differ from the unpacked app.
+- **Portable ZIP** contains the familiar `Flyff-U-Automation.exe`. Extract the entire directory before running it; do not copy the EXE by itself because its DLLs and `resources` directory are required.
+
+Both formats contain the same application code and use the same profile data under Electron's user-data directory.
+
 > **Required after upgrading to 4.0.2-automation.2:** The old vision regions and templates are cleared once because earlier builds captured the parent launcher background instead of the embedded game. Click **Refresh frame**, confirm you can see the actual Flyff game, and recalibrate the pixel regions and templates below. Your keys, thresholds, and timing settings are preserved.
 
 > **Automatic in 4.0.2-automation.8:** Existing profiles keep their calibration, but Main healing starts disabled. Incorrect player or target HP regions can no longer block basic targeting; the red combat crosshair is authoritative. Enable Main healing only after its HP telemetry is verified.
 
 > **Corrected in 4.0.2-automation.9:** Approach retries reacquire the monster label from the newest frame. The first click is close below the label and two bounded side points cover a small moving monster. A target that leaves the scan area is searched for again; its old coordinate is never reused.
+
+> **Target lock in 4.0.2-automation.10:** After the initial global match, approach retries search only near that same moving monster. Other identical labels cannot receive the second click. If the chosen monster escapes the local tracking window, the FSM safely returns to global search.
 
 ## Quick start: Observer mode
 
@@ -247,8 +256,8 @@ Keep supervising the game. Focusing an unrelated application pauses automation; 
 The target gate is deliberate:
 
 1. The scan finds the saved monster label.
-2. The app uses the newest match and clicks close below the label on the monster body.
-3. If necessary, the app reacquires the moving label and tries one small left or right fallback point.
+2. The app locks that label as the active monster and clicks close below it on the body.
+3. If necessary, the app follows only that moving label locally and tries one small left or right fallback point.
 4. `ATTACKING` begins only after a red crosshair is detected near that monster.
 
 A white crosshair or a visible monster label alone is not accepted as combat. Selection/engagement retries are limited to three clicks and the approach timeout still applies. If an unselected monster leaves the scan area, the FSM immediately returns to `SEARCHING` and drops the old point.
@@ -342,7 +351,7 @@ If the Support preview is blank, place both profiles in Grid/Split view, wait fo
 - Lower the threshold gradually to recover missed matches.
 - Validate every change in Observer mode before re-arming combat.
 - Keep enough world around the character inside the scan area for a moving monster to remain detectable. Leaving the area safely resets targeting to `SEARCHING`.
-- The launcher log records `Target click 1/3 at (x, y)` with the fresh match size and score for every approach attempt.
+- The launcher log records `initial fresh` for the first click and `locked fresh` for retries. A single approach should keep those coordinates near one monster rather than jumping across the scan area.
 
 ## Important limitations
 

@@ -7,7 +7,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-4.0.2--automation.9-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.10-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-Juli_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -293,7 +293,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/JoshuaSayo/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-4.0.2--automation.9-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-4.0.2--automation.10-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-July_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -317,7 +317,7 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 - Reads pixels directly from the selected embedded game surface on Windows; no memory access, packets, DOM inspection, or client modification
 - Starts safely in **Observer only** mode; the combat FSM must be selected and acknowledged per profile
 - Uses a target template and scan area for basic combat; player HP, target HP, Main healing, and skill rotation are optional
-- Matches the monster label, reacquires it from every fresh frame, and uses a bounded three-point body-click sweep before requiring the red combat crosshair
+- Locks onto one monster label, follows that moving target locally, and uses a bounded three-point body-click sweep before requiring the red combat crosshair
 - Attack skills are optional and disabled by default; normal click-to-attack works with no skill list
 - Uses local structural templates for targets, loot, and death; official API and plugin data are technically isolated from the automation path
 - Pauses when neither Flyff nor the Automation Workbench is in front, when the workbench closes, on detected death, and on every state timeout
@@ -329,7 +329,7 @@ This GPL-3.0 fork is based on [GH-Praxa/Flyff-U-Launcher](https://github.com/GH-
 
 For step-by-step usage, read [AUTOMATION_INSTRUCTIONS.md](AUTOMATION_INSTRUCTIONS.md). For technical safety boundaries, read [AUTOMATION.md](AUTOMATION.md).
 
-Version `4.0.2-automation.9` corrects moving-monster targeting: every retry uses the newest match, clicks close below the label, and discards stale coordinates when the target leaves the scan area.
+Version `4.0.2-automation.10` keeps all approach retries locked to one moving monster. Identical labels elsewhere in the scan area can no longer steal the second engagement click.
 
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles

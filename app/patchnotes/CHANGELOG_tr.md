@@ -1,6 +1,15 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.10
+
+### Her yaklaşmada tek hareketli canavar
+
+- İlk tarama bir canavar seçer; her tekrar yalnızca aynı hareketli etiketin yakınında arama yapar.
+- Başka yerlerdeki aynı etiketler artık saldırı tıklamasını alamaz.
+- Yerel kilit kaybolursa savaş güvenli biçimde genel aramaya döner.
+
+---
 ## Sürüm 4.0.2-automation.9
 
 ### Hareketli canavarları canlı yeniden yakalama

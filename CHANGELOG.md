@@ -2,6 +2,20 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.10] - 2026-07-29
+
+### Fixed
+
+- Approach retries now remain locked to one moving monster instead of choosing the highest-scoring identical label anywhere in the scan area on every frame.
+- The local tracking window follows the chosen label through approach, attack, healing, and re-engagement. If that label escapes the window, the lock is dropped and normal search restarts.
+- Body clicks use a corrected vertical gap for the user's `108x43` target-label crop.
+
+### Diagnostics
+
+- Click logs distinguish the initial global match from locked retries.
+- Live logs proved the former bug: one approach jumped across `(733,447) -> (840,399) -> (962,345)`, selecting different Aibatts instead of engaging one.
+- Windows output is provided as both a Squirrel `Setup.exe` and a portable ZIP; the two formats contain the same code.
+
 ## [4.0.2-automation.9] - 2026-07-29
 
 ### Fixed

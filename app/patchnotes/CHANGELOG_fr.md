@@ -1,6 +1,15 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.10
+
+### Un seul monstre mobile par approche
+
+- Le scan initial choisit un monstre ; chaque nouvel essai recherche uniquement près du même nom mobile.
+- Les noms identiques ailleurs ne peuvent plus détourner le clic d'engagement.
+- La perte du verrou local ramène proprement le combat à la recherche globale.
+
+---
 ## Version 4.0.2-automation.9
 
 ### Réacquisition en direct des monstres mobiles

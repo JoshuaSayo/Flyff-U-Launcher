@@ -1,6 +1,15 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.10
+
+### Jeden poruszający się potwór na podejście
+
+- Pierwszy skan wybiera jednego potwora; kolejne próby szukają tylko w pobliżu tej samej poruszającej się etykiety.
+- Identyczne etykiety w innych miejscach nie przejmują już kliknięcia ataku.
+- Utrata lokalnej blokady bezpiecznie przywraca wyszukiwanie globalne.
+
+---
 ## Wersja 4.0.2-automation.9
 
 ### Ponowne wykrywanie poruszających się potworów
