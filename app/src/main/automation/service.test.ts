@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BrowserWindow, NativeImage, WebContents } from "electron";
 import sharp from "sharp";
-import { defaultAutomationConfig } from "../../shared/automation";
+import { defaultAutomationConfig, type AutomationConfig } from "../../shared/automation";
 import { AutomationService, targetBodyClickPoint, type AutomationTarget } from "./service";
 import type { AutomationStore } from "./store";
 
@@ -186,6 +186,47 @@ describe("AutomationService combat arming", () => {
         service.stop();
     });
 
+    it("arms basic combat without optional Main or target HP calibration", async () => {
+        const selected = target(true);
+        const config: AutomationConfig = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "combat" as const,
+            playerHpRoi: null,
+            targetHpRoi: null,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: true, loot: false, death: false })),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({ store, resolveTarget: () => selected.value });
+
+        await expect(service.start("profile-1", true)).resolves.toMatchObject({
+            state: "searching",
+            armed: true,
+        });
+        service.stop();
+    });
+
+    it("requires player HP calibration only when optional Main healing is enabled", async () => {
+        const selected = target(true);
+        const config: AutomationConfig = {
+            ...defaultAutomationConfig("profile-1"),
+            mode: "combat" as const,
+            mainHealingEnabled: true,
+            playerHpRoi: null,
+        };
+        const store = {
+            load: vi.fn(async () => config),
+            templateState: vi.fn(async () => ({ target: true, loot: false, death: false })),
+        } as unknown as AutomationStore;
+        const service = new AutomationService({ store, resolveTarget: () => selected.value });
+
+        await expect(service.start("profile-1", true)).rejects.toThrow(
+            "Calibrate the player HP region or disable optional Main healing",
+        );
+        service.stop();
+    });
+
     it("refuses to arm when the selected client cannot receive focus", async () => {
         const selected = target(false);
         const service = new AutomationService({
@@ -264,7 +305,7 @@ describe("AutomationService combat arming", () => {
             const engaged = frames >= 4;
             return {
                 playerHp: 0.9,
-                targetHp: frames >= 2 ? 1 : null,
+                targetHp: null,
                 target: targetMatch,
                 loot: null,
                 death: null,
@@ -290,7 +331,7 @@ describe("AutomationService combat arming", () => {
         expect(mouseEvents.filter((event) => event.type === "mousePressed").length).toBeGreaterThanOrEqual(2);
         expect(mouseEvents).toContainEqual(expect.objectContaining({ type: "mousePressed", x: 60, y: 46 }));
         expect(keyEvents).toHaveLength(0);
-        expect(service.status().metrics.targetSelected).toBe(true);
+        expect(service.status().metrics.targetSelected).toBe(false);
         expect(service.status().metrics.targetEngaged).toBe(true);
         service.stop();
     });

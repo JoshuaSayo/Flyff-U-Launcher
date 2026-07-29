@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.8
+
+### Basic combat without HP calibration gates
+
+- Main healing is now opt-in, so an inaccurate player-HP reading cannot block target search.
+- Selected-target HP is optional telemetry; a confirmed red combat crosshair starts and maintains combat.
+- Oversized combat HP boxes are rejected, while version-7 profiles migrate with Main healing disabled.
+
+See [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md) for the two-step basic setup.
+
+---
 ## Version 4.0.2-automation.7
 
 ### Reliable monster-body targeting

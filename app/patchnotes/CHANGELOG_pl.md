@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Wersja 4.0.2-automation.8
+
+### Podstawowa walka bez blokady kalibracji HP
+
+- Leczenie Main jest teraz opcjonalne, więc błędny odczyt HP nie blokuje wyszukiwania celu.
+- HP celu to opcjonalna telemetria; potwierdzony czerwony celownik uruchamia i utrzymuje walkę.
+- Zbyt duże obszary HP są odrzucane, a profile wersji 7 migrują z wyłączonym leczeniem Main.
+
+Konfiguracja w dwóch krokach: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Wersja 4.0.2-automation.7
 
 ### Niezawodne klikanie ciała potwora

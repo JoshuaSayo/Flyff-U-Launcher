@@ -2,6 +2,24 @@
 
 All notable changes made by the Flyff-U-Automation fork are documented here. Upstream launcher history remains available in the localized files under `app/patchnotes/`.
 
+## [4.0.2-automation.8] - 2026-07-29
+
+### Fixed
+
+- Incorrect Main HP calibration can no longer force basic combat into `HEALING`. Main self-healing is now an explicit opt-in feature and version-7 profiles migrate with it disabled.
+- Selected-target HP is now optional telemetry instead of an engagement gate. A structurally confirmed red combat crosshair is authoritative after the monster-body click.
+- Attacking remains active while the red crosshair remains confirmed even when no target-HP region is configured.
+
+### Changed
+
+- Basic combat setup now requires only a target template; the scan area has a safe default. Player HP and target HP calibration are labeled optional.
+- Configuration schema is now version 8.
+- Live HP telemetry says `monitor only` while optional Main healing is disabled.
+
+### Diagnostics
+
+- The user's screenshot showed a valid `65.3% / 60.0% MATCH`, but an oversized HP region reported `25.2%` and paused after the healing safety timeout. This release removes both inaccurate HP regions from the basic targeting path.
+
 ## [4.0.2-automation.7] - 2026-07-29
 
 ### Fixed

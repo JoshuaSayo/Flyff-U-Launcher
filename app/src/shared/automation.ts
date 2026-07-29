@@ -2,7 +2,7 @@
 
 export type AutomationTemplateKind = "target" | "loot" | "death";
 
-export const AUTOMATION_CONFIG_VERSION = 7 as const;
+export const AUTOMATION_CONFIG_VERSION = 8 as const;
 
 export type AutomationMode = "observer" | "combat" | "support" | "combat_support";
 
@@ -38,6 +38,7 @@ export type AutomationConfig = {
     playerHpRoi: NormalizedRect | null;
     targetHpRoi: NormalizedRect | null;
     targetScanRoi: NormalizedRect;
+    mainHealingEnabled: boolean;
     healThreshold: number;
     safeHpThreshold: number;
     templateThreshold: number;
@@ -130,6 +131,7 @@ export function defaultAutomationConfig(profileId: string): AutomationConfig {
         playerHpRoi: null,
         targetHpRoi: null,
         targetScanRoi: { x: 0.08, y: 0.08, width: 0.84, height: 0.62 },
+        mainHealingEnabled: false,
         healThreshold: 0.40,
         safeHpThreshold: 0.75,
         templateThreshold: 0.60,
@@ -202,6 +204,12 @@ function normalizeBarRect(value: unknown): NormalizedRect | null {
     return rect;
 }
 
+function normalizeCombatBarRect(value: unknown): NormalizedRect | null {
+    const rect = normalizeBarRect(value);
+    if (!rect || rect.width > 0.25 || rect.height > 0.05 || rect.width * rect.height > 0.0125) return null;
+    return rect;
+}
+
 function normalizeSupportTargetRect(value: unknown): NormalizedRect | null {
     const rect = normalizeRect(value, null);
     if (!rect || rect.width > 0.70 || rect.height > 0.20 || rect.width * rect.height > 0.10) return null;
@@ -247,9 +255,10 @@ export function normalizeAutomationConfig(profileId: string, value: unknown): Au
         mode: input.mode === "combat" || input.mode === "support" || input.mode === "combat_support"
             ? input.mode
             : "observer",
-        playerHpRoi: normalizeBarRect(input.playerHpRoi),
-        targetHpRoi: normalizeBarRect(input.targetHpRoi),
+        playerHpRoi: normalizeCombatBarRect(input.playerHpRoi),
+        targetHpRoi: normalizeCombatBarRect(input.targetHpRoi),
         targetScanRoi: normalizeRect(input.targetScanRoi, defaults.targetScanRoi) ?? defaults.targetScanRoi,
+        mainHealingEnabled: input.mainHealingEnabled === true,
         healThreshold: finiteNumber(input.healThreshold, defaults.healThreshold, 0.05, 0.95),
         safeHpThreshold: finiteNumber(input.safeHpThreshold, defaults.safeHpThreshold, 0.10, 1),
         templateThreshold: finiteNumber(input.templateThreshold, defaults.templateThreshold, 0.45, 0.99),

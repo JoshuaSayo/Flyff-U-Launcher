@@ -93,6 +93,7 @@ describe("AutomationStore", () => {
             expect(config.supportResurrectionEnabled).toBe(false);
             expect(config.useAttackSkills).toBe(false);
             expect(config.deathDetectionEnabled).toBe(false);
+            expect(config.mainHealingEnabled).toBe(false);
         } finally {
             await rm(root, { recursive: true, force: true });
         }
@@ -141,6 +142,30 @@ describe("AutomationStore", () => {
             expect(config.version).toBe(AUTOMATION_CONFIG_VERSION);
             expect(config.deathDetectionEnabled).toBe(false);
             expect((await store.templateState("profile-6")).death).toBe(true);
+        } finally {
+            await rm(root, { recursive: true, force: true });
+        }
+    });
+
+    it("migrates version-7 combat profiles with Main healing disabled and oversized HP boxes cleared", async () => {
+        const root = await mkdtemp(path.join(tmpdir(), "flyff-automation-store-"));
+        const profileDir = path.join(root, "profile-7");
+        await mkdir(profileDir, { recursive: true });
+        await writeFile(path.join(profileDir, "config.json"), JSON.stringify({
+            version: 7,
+            profileId: "profile-7",
+            mode: "combat",
+            playerHpRoi: { x: 0.08, y: 0.02, width: 0.09, height: 0.06 },
+            targetHpRoi: { x: 0.42, y: 0.02, width: 0.31, height: 0.12 },
+        }), "utf8");
+
+        try {
+            const store = new AutomationStore(root);
+            const config = await store.load("profile-7");
+            expect(config.version).toBe(AUTOMATION_CONFIG_VERSION);
+            expect(config.mainHealingEnabled).toBe(false);
+            expect(config.playerHpRoi).toBeNull();
+            expect(config.targetHpRoi).toBeNull();
         } finally {
             await rm(root, { recursive: true, force: true });
         }

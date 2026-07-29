@@ -1,6 +1,17 @@
 # 📦 Yama Notları
 
 ---
+## Sürüm 4.0.2-automation.8
+
+### HP kalibrasyonu engeli olmadan temel savaş
+
+- Main iyileştirme artık isteğe bağlıdır; hatalı HP değeri hedef aramasını engellemez.
+- Hedef HP isteğe bağlı telemetridir; doğrulanan kırmızı nişangâh savaşı başlatır ve sürdürür.
+- Aşırı büyük savaş HP alanları reddedilir; sürüm 7 profilleri Main iyileştirme kapalı olarak taşınır.
+
+İki adımlı kurulum: [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Sürüm 4.0.2-automation.7
 
 ### Güvenilir canavar gövdesi tıklaması

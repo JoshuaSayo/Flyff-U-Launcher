@@ -94,6 +94,23 @@ describe("normalizeAutomationConfig", () => {
         expect(normalizeAutomationConfig("main", { deathDetectionEnabled: true }).deathDetectionEnabled).toBe(true);
     });
 
+    it("keeps Main healing opt-in so imperfect HP telemetry cannot block targeting", () => {
+        expect(normalizeAutomationConfig("main", {}).mainHealingEnabled).toBe(false);
+        expect(normalizeAutomationConfig("main", { mainHealingEnabled: true }).mainHealingEnabled).toBe(true);
+    });
+
+    it("rejects oversized combat HP boxes while preserving tight bar regions", () => {
+        const config = normalizeAutomationConfig("main", {
+            playerHpRoi: { x: 0.0788, y: 0.0221, width: 0.0885, height: 0.0584 },
+            targetHpRoi: { x: 0.4286, y: 0.0262, width: 0.3132, height: 0.1167 },
+        });
+        expect(config.playerHpRoi).toBeNull();
+        expect(config.targetHpRoi).toBeNull();
+        expect(normalizeAutomationConfig("main", {
+            playerHpRoi: { x: 0.08, y: 0.03, width: 0.09, height: 0.015 },
+        }).playerHpRoi).not.toBeNull();
+    });
+
     it("normalizes optional attack skill keys only when explicitly enabled", () => {
         const config = normalizeAutomationConfig("main", {
             useAttackSkills: true,

@@ -8,6 +8,7 @@ const readySupport: SetupReadinessInput = {
     hasPlayerHp: false,
     hasTargetHp: false,
     hasTargetTemplate: false,
+    mainHealingEnabled: false,
     deathDetectionEnabled: false,
     useAttackSkills: false,
     hasAttackKeys: false,
@@ -57,8 +58,6 @@ describe("automationSetupChecklist", () => {
             mode: "combat_support",
         });
         expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual([
-            "main_hp",
-            "target_hp",
             "target_template",
         ]);
     });
@@ -73,6 +72,16 @@ describe("automationSetupChecklist", () => {
             useAttackSkills: true,
         });
         expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual(["attack_keys"]);
+    });
+
+    it("requires Main HP calibration only when optional Main healing is enabled", () => {
+        const checks = automationSetupChecklist({
+            ...readySupport,
+            mode: "combat",
+            hasTargetTemplate: true,
+            mainHealingEnabled: true,
+        });
+        expect(checks.filter((check) => !check.ready).map((check) => check.id)).toEqual(["main_hp"]);
     });
 
     it("requires a death dialog only when optional combat death detection is enabled", () => {

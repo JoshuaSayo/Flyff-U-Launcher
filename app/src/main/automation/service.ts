@@ -185,8 +185,9 @@ export class AutomationService {
         const combatEnabled = usesCombat(config);
         const supportEnabled = usesSupport(config);
         if (combatEnabled) {
-            if (!config.playerHpRoi) throw new Error("Calibrate the player HP region before arming combat mode");
-            if (!config.targetHpRoi) throw new Error("Calibrate the selected target HP region before arming combat mode");
+            if (config.mainHealingEnabled && !config.playerHpRoi) {
+                throw new Error("Calibrate the player HP region or disable optional Main healing");
+            }
             if (!templates.target) throw new Error("Capture a target template before arming combat mode");
             if (config.deathDetectionEnabled && !templates.death) {
                 throw new Error("Capture a death dialog template or disable optional death detection");
@@ -446,7 +447,7 @@ export class AutomationService {
             const deathDetectionActive = config.deathDetectionEnabled || config.supportResurrectionEnabled;
             const deathVisible = deathDetectionActive && (result.death?.score ?? 0) >= threshold;
             const targetSelected = result.targetHp !== null;
-            const targetEngaged = targetSelected && result.crosshair.engaged;
+            const targetEngaged = result.crosshair.engaged;
             if (targetEngaged && result.crosshair.centerX !== null && result.crosshair.centerY !== null) {
                 this.activeTargetPoint = {
                     x: result.crosshair.centerX,
@@ -455,7 +456,7 @@ export class AutomationService {
             }
             const analyzeMs = performance.now() - analyzeStarted;
             if (this.statusValue.state === "attacking") {
-                this.lostTargetFrames = targetSelected ? 0 : this.lostTargetFrames + 1;
+                this.lostTargetFrames = targetSelected || targetEngaged ? 0 : this.lostTargetFrames + 1;
                 this.lostEngagementFrames = targetEngaged
                     ? 0
                     : targetSelected
@@ -512,7 +513,7 @@ export class AutomationService {
             const current = this.statusValue.state;
             const next = decideAutomationState(current, {
                 mode: config.mode,
-                playerHp: result.playerHp,
+                playerHp: config.mainHealingEnabled ? result.playerHp : null,
                 targetVisible,
                 targetSelected,
                 targetEngaged,

@@ -1,6 +1,17 @@
 # 📦 Notes de patch
 
 ---
+## Version 4.0.2-automation.8
+
+### Combat de base sans blocage par l'étalonnage HP
+
+- Le soin du Main est désormais optionnel ; une lecture HP incorrecte ne bloque plus la recherche de cible.
+- Les HP de cible sont une télémétrie optionnelle ; le viseur rouge confirmé démarre et maintient le combat.
+- Les zones HP de combat trop grandes sont rejetées et les profils version 7 migrent avec le soin Main désactivé.
+
+La configuration en deux étapes est décrite dans [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.7
 
 ### Ciblage fiable du corps du monstre

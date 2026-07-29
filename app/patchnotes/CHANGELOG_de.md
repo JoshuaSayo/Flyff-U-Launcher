@@ -1,6 +1,17 @@
 # 📦 Patchnotes
 
 ---
+## Version 4.0.2-automation.8
+
+### Basiskampf ohne HP-Kalibrierungsblockade
+
+- Main-Heilung ist jetzt optional, sodass ein falscher Spieler-HP-Wert die Zielsuche nicht blockiert.
+- Ziel-HP sind optionale Telemetrie; ein bestätigtes rotes Fadenkreuz startet und hält den Kampf.
+- Zu große Kampf-HP-Bereiche werden abgelehnt; Version-7-Profile werden mit deaktivierter Main-Heilung migriert.
+
+Die Zwei-Schritt-Einrichtung steht in [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md).
+
+---
 ## Version 4.0.2-automation.7
 
 ### Zuverlässiges Anklicken des Monsterkörpers

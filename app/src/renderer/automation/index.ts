@@ -91,6 +91,13 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         useAttackSkills,
         el("span", "", "Use skill keys only after the red combat crosshair is confirmed"),
     );
+    const mainHealingEnabled = document.createElement("input");
+    mainHealingEnabled.type = "checkbox";
+    const mainHealingRow = el("label", "automationAcknowledge");
+    mainHealingRow.append(
+        mainHealingEnabled,
+        el("span", "", "Use optional Main heal key when calibrated HP is low"),
+    );
     const deathDetectionEnabled = document.createElement("input");
     deathDetectionEnabled.type = "checkbox";
     const deathDetectionRow = el("label", "automationAcknowledge");
@@ -111,7 +118,8 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     mainConfigSummary.textContent = "Main combat and vision settings";
     mainConfigDetails.append(
         mainConfigSummary,
-        el("p", "automationShortcut", "Targeting matches the monster name, clicks below it on the body, then verifies the selected HP bar and red crosshair. Skills are not required."),
+        el("p", "automationShortcut", "Basic combat needs only a monster-label template. The app clicks below the label and trusts the red combat crosshair; target HP, Main healing, and skill keys are optional."),
+        mainHealingRow,
         useAttackSkillsRow,
         deathDetectionRow,
         attack.row,
@@ -244,14 +252,14 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
     );
     const calibrationGrid = el("div", "automationCalibrationGrid");
     const calibrationItems: Array<[CalibrationKind, string]> = [
-        ["playerHpRoi", "1. Main player HP"],
-        ["targetHpRoi", "2. Selected monster HP"],
-        ["targetScanRoi", "3. Monster scan area"],
+        ["playerHpRoi", "Main player HP (optional healing)"],
+        ["targetHpRoi", "Selected monster HP (optional telemetry)"],
+        ["targetScanRoi", "1. Monster scan area"],
         ["mainPartyHpRoi", "1. Main party HP"],
         ["mainPartyTargetRoi", "2. Main party row"],
         ["supportSelfHpRoi", "Support HP (Support view)"],
         ["supportMpRoi", "Support MP (Support view)"],
-        ["target", "4. Capture monster label"],
+        ["target", "2. Capture monster label"],
         ["loot", "Capture loot"],
         ["death", "Capture death dialog (optional)"],
     ];
@@ -350,6 +358,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             hasPlayerHp: Boolean(config?.playerHpRoi),
             hasTargetHp: Boolean(config?.targetHpRoi),
             hasTargetTemplate: templates.target,
+            mainHealingEnabled: mainHealingEnabled.checked,
             deathDetectionEnabled: deathDetectionEnabled.checked,
             useAttackSkills: useAttackSkills.checked,
             hasAttackKeys: attack.input.value.split(",").some((key) => key.trim().length > 0),
@@ -396,6 +405,10 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         setFieldsDisabled(
             [attack],
             !useAttackSkills.checked,
+        );
+        setFieldsDisabled(
+            [heal, healAt, safeAt],
+            !mainHealingEnabled.checked,
         );
         setFieldsDisabled(
             [supportSelfHeal, supportSelfHealAt, supportSelfSafeAt, supportSelfInterval],
@@ -446,6 +459,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
             ? modeSelect.value
             : "observer";
         config.useAttackSkills = useAttackSkills.checked;
+        config.mainHealingEnabled = mainHealingEnabled.checked;
         config.deathDetectionEnabled = deathDetectionEnabled.checked;
         config.attackKeys = attack.input.value.split(",").map((key) => key.trim().toUpperCase()).filter(Boolean);
         config.healKey = heal.input.value.trim().toUpperCase();
@@ -498,6 +512,7 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         if (!config) return;
         modeSelect.value = config.mode;
         useAttackSkills.checked = config.useAttackSkills;
+        mainHealingEnabled.checked = config.mainHealingEnabled;
         deathDetectionEnabled.checked = config.deathDetectionEnabled;
         attack.input.value = config.attackKeys.join(", ");
         heal.input.value = config.healKey;
@@ -707,10 +722,11 @@ export async function renderAutomation(root: HTMLElement): Promise<void> {
         const targetScore = status.metrics.targetScore;
         const requiredTargetScore = config?.templateThreshold ?? 0.60;
         const targetMatch = targetScore !== null && targetScore >= requiredTargetScore;
-        const hpHealingGate = status.metrics.playerHp !== null
+        const hpHealingGate = Boolean(config?.mainHealingEnabled)
+            && status.metrics.playerHp !== null
             && status.metrics.playerHp < (config?.healThreshold ?? 0.40);
         metrics.textContent = [
-            `HP ${pct(status.metrics.playerHp)}${hpHealingGate ? " HEALING GATE—recalibrate if HUD is full" : ""}`,
+            `HP ${pct(status.metrics.playerHp)}${hpHealingGate ? " HEALING GATE—recalibrate if HUD is full" : config?.mainHealingEnabled ? "" : " monitor only"}`,
             `Target HP ${pct(status.metrics.targetHp)}`,
             `Selected ${status.metrics.targetSelected ? "yes" : "no"}`,
             `Crosshair ${status.metrics.targetEngaged ? "RED" : "no"} ${pct(status.metrics.targetCrosshairScore)}`,

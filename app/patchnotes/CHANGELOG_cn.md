@@ -1,6 +1,17 @@
 # 📦 更新日志
 
 ---
+## 版本 4.0.2-automation.8
+
+### 基础战斗不再受 HP 校准阻挡
+
+- Main 治疗改为可选，因此错误的玩家 HP 读数不会阻止目标搜索。
+- 目标 HP 仅为可选遥测；确认红色准星后即可开始并维持战斗。
+- 过大的战斗 HP 区域会被拒绝，版本 7 配置会以关闭 Main 治疗的状态迁移。
+
+两步设置请参阅 [AUTOMATION_INSTRUCTIONS.md](../../AUTOMATION_INSTRUCTIONS.md)。
+
+---
 ## 版本 4.0.2-automation.7
 
 ### 可靠点击怪物本体

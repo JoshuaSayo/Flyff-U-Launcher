@@ -7,6 +7,7 @@ export type SetupReadinessInput = {
     hasPlayerHp: boolean;
     hasTargetHp: boolean;
     hasTargetTemplate: boolean;
+    mainHealingEnabled: boolean;
     deathDetectionEnabled: boolean;
     useAttackSkills: boolean;
     hasAttackKeys: boolean;
@@ -38,11 +39,10 @@ export function automationSetupChecklist(input: SetupReadinessInput): SetupCheck
         ready: input.mainProfileId.length > 0,
     }];
     if (combatMode) {
-        checks.push(
-            { id: "main_hp", label: "Main player HP calibrated", ready: input.hasPlayerHp },
-            { id: "target_hp", label: "Selected monster HP calibrated", ready: input.hasTargetHp },
-            { id: "target_template", label: "Target template captured", ready: input.hasTargetTemplate },
-        );
+        checks.push({ id: "target_template", label: "Target template captured", ready: input.hasTargetTemplate });
+        if (input.mainHealingEnabled) {
+            checks.push({ id: "main_hp", label: "Optional Main healing HP calibrated", ready: input.hasPlayerHp });
+        }
         if (input.deathDetectionEnabled && !input.resurrectionEnabled) {
             checks.push({
                 id: "death_template",

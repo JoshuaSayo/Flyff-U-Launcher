@@ -17,7 +17,7 @@ The automation can control one explicit Main client and one explicitly paired Su
 
 > **Required after upgrading to 4.0.2-automation.2:** The old vision regions and templates are cleared once because earlier builds captured the parent launcher background instead of the embedded game. Click **Refresh frame**, confirm you can see the actual Flyff game, and recalibrate the pixel regions and templates below. Your keys, thresholds, and timing settings are preserved.
 
-> **Automatic in 4.0.2-automation.7:** Version-6 profiles keep their calibration and templates, but optional death-dialog detection starts disabled so an invalid legacy crop cannot stop target search. The target threshold migration, Chromium `Input` delivery, and Workbench supervision behavior from automation.6 remain in effect.
+> **Automatic in 4.0.2-automation.8:** Existing profiles keep their calibration, but Main healing starts disabled. Incorrect player or target HP regions can no longer block basic targeting; the red combat crosshair is authoritative. Enable Main healing only after its HP telemetry is verified.
 
 ## Quick start: Observer mode
 
@@ -56,7 +56,7 @@ For each region:
 4. Drag a rectangle over the element in the preview.
 5. Click **Save profile** after region changes.
 
-### Player HP region
+### Player HP region (optional Main healing)
 
 Click **Player HP region**, then select only the colored interior of the player's HP bar.
 
@@ -65,15 +65,15 @@ Click **Player HP region**, then select only the colored interior of the player'
 - Calibrate while the bar is visible and preferably full.
 - If the selection covers a large panel or much of the screen, the workbench rejects it; select only the bar interior.
 
-Player HP calibration is required before Combat FSM mode can start.
+Player HP calibration is required only when **Use optional Main heal key** is enabled. With Main healing off, HP remains monitor-only and cannot block targeting.
 
-Before combat, run Observer mode while the HUD HP bar is full. Live `HP` should be near 100%. If it reads low—for example 25.2% while the HUD is full—the FSM correctly enters HEALING and never reaches target search. Recalibrate tightly around only the colored fill until the telemetry agrees.
+Before enabling Main healing, run Observer mode while the HUD HP bar is full. Live `HP` should be near 100%. Recalibrate tightly around only the colored fill until the telemetry agrees.
 
-### Target HP region
+### Target HP region (optional telemetry)
 
 Select a monster manually so its HP bar appears. Refresh the frame, click **Target HP region**, and drag over only the colored interior of that target HP bar.
 
-This region is required for Combat FSM mode. It confirms that the first monster click actually selected a target. Keep it away from names, numbers, and the bar border.
+This region is optional telemetry. Keep it away from names, numbers, and the bar border. The red crosshair confirms combat engagement even when no target-HP region is configured.
 
 Flyff shows a white crosshair after selection and a red crosshair after combat engages. You do not calibrate either crosshair: the workbench detects the red marker structurally near the clicked monster.
 
@@ -209,6 +209,7 @@ Do not open DevTools or activate controller **Forward Hold** on either automated
 | Field | Example | Meaning |
 |---|---|---|
 | Mode | Combat FSM | Enables supervised Chromium input |
+| Use optional Main heal key | Off | Enable only after Player HP reads correctly |
 | Pause on death dialog | Off | Optional; enable only after capturing a distinctive death-dialog detail |
 | Use skill keys | Off | Optional; click-to-attack works without skills |
 | Skill rotation (optional) | `1, 2, 3` | Keys cycled only after red-crosshair confirmation |
@@ -227,15 +228,13 @@ Click **Save profile** after changing the settings.
 
 ## Start Combat FSM
 
-1. Confirm **Player HP region** is calibrated.
-2. Click a monster manually so its target HP bar appears.
-3. Refresh the frame and calibrate **Selected monster HP** over only the colored HP fill.
-4. Confirm the target-label template badge says **ready**.
-5. Select **Combat FSM**.
-6. Leave **Use skill keys** off unless you explicitly want a skill rotation.
-7. Click **Save profile**.
-8. Check: **I am supervising the Main client or this Workbench and accept the game-account risk.**
-9. Click **Start**.
+1. Confirm the target-label template badge says **ready**.
+2. Confirm the Monster scan area covers the visible monsters.
+3. Select **Combat FSM**.
+4. Leave optional Main healing and skill keys off for the first test.
+5. Click **Save profile**.
+6. Check: **I am supervising the Main client or this Workbench and accept the game-account risk.**
+7. Click **Start**.
 
 The acknowledged Start action restores and initially focuses the selected game session before arming Chromium input. If the client cannot receive initial focus, the app refuses to arm. After Start, you may keep either Flyff or the Automation Workbench in front.
 
@@ -245,9 +244,8 @@ The target gate is deliberate:
 
 1. The scan finds the saved monster label.
 2. The app automatically shifts below the label and clicks the monster body to select it.
-3. The selected-monster HP region must become valid.
-4. If necessary, the app clicks the same monster again to engage it.
-5. `ATTACKING` begins only after a red crosshair is detected near that monster.
+3. If necessary, the app clicks the same monster again to engage it.
+4. `ATTACKING` begins only after a red crosshair is detected near that monster.
 
 A white crosshair or a visible monster label alone is not accepted as combat. Selection/engagement retries are limited to three clicks and the approach timeout still applies.
 
@@ -256,7 +254,7 @@ A white crosshair or a visible monster label alone is not accepted as combat. Se
 | Status | What the app is doing |
 |---|---|
 | `SEARCHING` | Looking for the target template and periodically using the search key |
-| `APPROACHING` | Clicking the matched monster, waiting for selected HP, then waiting for a red crosshair |
+| `APPROACHING` | Clicking below the matched label and waiting for a red crosshair |
 | `ATTACKING` | Continuing click-to-attack; optional skill keys run only when enabled |
 | `HEALING` | Using the heal key until HP reaches the safe threshold |
 | `LOOTING` | Clicking matched loot or using the pickup key |
@@ -297,18 +295,16 @@ Read the error toast and verify:
 
 - the selected profile is currently open;
 - **Combat FSM** is saved;
-- the Player HP region exists;
-- the Selected monster HP region exists and covers only the colored target-HP fill;
 - the target template badge says **ready**;
 - the supervision checkbox is checked;
 - the selected game client can be restored and focused.
 
 Watch the live **Selected** and **Crosshair** values:
 
-- **HP below Heal below** activates the HEALING gate before searching. If the HUD is visibly full but telemetry is low, recalibrate Main player HP.
+- **HP monitor only** means Main healing is disabled and cannot block targeting. Enable it only after full HUD HP reads near 100%.
 - **Target below need** means no click will be sent yet. Version 4.0.2-automation.6 migrated the former 82% default to 60%.
-- **Selected: no** after a click means the selected-monster HP calibration is wrong or the click missed.
-- **Selected: yes / Crosshair: no** means Flyff selected the monster but did not engage combat. The app retries the same point up to its bounded limit.
+- **Selected** is optional target-HP telemetry and may remain `no` without blocking combat.
+- **Crosshair: no** after a click means Flyff did not engage combat. The app retries the same point up to its bounded limit.
 - **Crosshair: RED** is the only condition that opens the attacking state.
 - If you enabled skill keys, confirm the rotation contains valid keys. Skills are not required when the toggle is off.
 
